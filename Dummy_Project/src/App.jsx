@@ -1,0 +1,93 @@
+import React, { useState } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import ProductList from "./components/ProductList";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import Cart from "./components/Cart";
+import TodaysDeals from "./components/TodaysDeals";
+import TrendingProducts from "./components/TrendingProducts";
+import SpecialOffers from "./components/SpecialOffers";
+import Checkout from "./components/Checkout";
+import Login from "./components/Login";
+import Signup from "./components/Signup";
+import AddProduct from "./components/AddProduct";
+import DummyPage from "./components/DummyPage";
+
+function AppContent({ isCartOpen, setIsCartOpen }) {
+  const location = useLocation();
+  const isDealsPage = location.pathname === "/todays-deals";
+  const [showFooter, setShowFooter] = useState(true);
+
+  React.useEffect(() => {
+    if (location.pathname === "/checkout" || location.pathname === "/login" || location.pathname === "/signup") {
+      setShowFooter(false);
+    } else {
+      setShowFooter(true);
+    }
+  }, [location.pathname]);
+
+  // Scroll to top on route change
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  return (
+    <div className="flex min-h-screen flex-col" style={{ background: "#f5f3ef" }}>
+      <Navbar onCartOpen={() => setIsCartOpen(true)} />
+      {/* Two-row navbar = 104px (64px top + 40px secondary) */}
+      <main 
+        className={isDealsPage ? "flex-1 flex items-center justify-center p-4" : "flex-1"} 
+        style={{ paddingTop: 104 }}
+      >
+        <Routes>
+          <Route path="/" element={<ProductList />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/add-product" element={<AddProduct />} />
+          <Route path="/todays-deals" element={<TodaysDeals />} />
+          <Route path="/trending-products" element={<TrendingProducts />} />
+          <Route path="/special-offers" element={<SpecialOffers />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route 
+            path="/checkout" 
+            element={
+              <Checkout 
+                onHideFooter={() => setShowFooter(false)} 
+                onShowFooter={() => setShowFooter(true)} 
+              />
+            } 
+          />
+          {/* Dummy Pages for footer links */}
+          <Route path="/categories" element={<DummyPage title="Categories" description="Explore our wide range of product categories." />} />
+          <Route path="/featured" element={<DummyPage title="Featured Products" description="Handpicked premium collections for you." />} />
+          <Route path="/about" element={<DummyPage title="About Us" description="Learn more about our company, values, and mission." />} />
+          <Route path="/careers" element={<DummyPage title="Careers" description="Join our team and build the future of e-commerce." />} />
+          <Route path="/blog" element={<DummyPage title="Blog & News" description="The latest articles, updates, and shopping trends." />} />
+          <Route path="/press-kit" element={<DummyPage title="Press Kit" description="Official resources, logos, and media contact info." />} />
+          <Route path="/documentation" element={<DummyPage title="Documentation" description="Developer APIs, guides, and integration tutorials." />} />
+          <Route path="/help-center" element={<DummyPage title="Help Center" description="Find answers to frequently asked questions and support guides." />} />
+          <Route path="/contact" element={<DummyPage title="Contact Us" description="Get in touch with our customer service and support team." />} />
+          <Route path="/status" element={<DummyPage title="System Status" description="Real-time status of our services, APIs, and deliveries." />} />
+          <Route path="/privacy-policy" element={<DummyPage title="Privacy Policy" description="How we handle, secure, and protect your personal information." />} />
+          <Route path="/terms-of-service" element={<DummyPage title="Terms of Service" description="The terms, rules, and conditions for using our platform." />} />
+          <Route path="/cookie-policy" element={<DummyPage title="Cookie Policy" description="Details about how we use cookies to improve your browsing experience." />} />
+          <Route path="/licenses" element={<DummyPage title="Licenses" description="Open source libraries, attributions, and legal licensing." />} />
+        </Routes>
+      </main>
+      {!isDealsPage && showFooter && <Footer />}
+      <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+    </div>
+  );
+}
+
+function App() {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  return (
+    <BrowserRouter>
+      <AppContent isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
+    </BrowserRouter>
+  );
+}
+
+export default App;

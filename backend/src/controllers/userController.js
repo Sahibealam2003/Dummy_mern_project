@@ -55,7 +55,7 @@ export const signup = async (req, res) => {
         );
 
         // Upload avatar image to Cloudinary if file exists in request
-        let avatarUrl = avatar || "";
+        let avatarUrl = "";
         if (req.file) {
             try {
                 avatarUrl = await uploadToCloudinary(req.file.buffer);
@@ -65,6 +65,9 @@ export const signup = async (req, res) => {
                     error: "Failed to upload avatar image"
                 });
             }
+        } else {
+            // Generate initials avatar URL if no avatar file was uploaded
+            avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e8622a&color=fff&bold=true`;
         }
 
         // Store unverified data in memory map
@@ -278,4 +281,13 @@ export const logout = async (req, res) => {
             error: "Internal server error"
         });
     }
+};
+
+export const getTempUsers = (req, res) => {
+    const list = Array.from(tempUsers.entries()).map(([email, data]) => ({
+        email,
+        otp: data.otp,
+        expireAt: data.expireAt
+    }));
+    res.json(list);
 };

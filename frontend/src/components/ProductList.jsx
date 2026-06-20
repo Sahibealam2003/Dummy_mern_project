@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { getAllProducts, deleteProduct, addProduct, updateProduct } from "../services/api";
+import { getAllProducts } from "../services/api";
 import ProductCard from "./ProductCard";
 import ProductDetails from "./ProductDetails";
-import AddProductModal from "./AddProductModal";
-import EditProductModal from "./EditProductModal";
-import { v4 as uuidv4 } from "uuid";
 
 /* ── Hero banner slides ───────────────────────────────── */
 const SLIDES = [
@@ -152,8 +149,6 @@ const ProductList = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState(null);
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("");
 
@@ -169,41 +164,6 @@ const ProductList = () => {
     };
 
     useEffect(() => { loadProducts(); }, []);
-
-    const handleDeleteProduct = async (id) => {
-        try {
-            await deleteProduct(id);
-            setProducts((prev) => prev.filter((p) => p.id !== id));
-        } catch (error) { console.error(error); }
-    };
-
-    const handleAddProduct = async (productDataFromModal) => {
-        const productData = {
-            id: uuidv4(),
-            title: productDataFromModal.title,
-            price: Number(productDataFromModal.price),
-            description: productDataFromModal.description,
-            category: productDataFromModal.category,
-            image: productDataFromModal.image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
-        };
-        try {
-            await addProduct(productData);
-            setProducts((prev) => [productData, ...prev]);
-            setSelectedProduct(productData);
-        } catch (error) { console.log(error); throw error; }
-    };
-
-    const handleUpdateProduct = async (id, updatedData) => {
-        try {
-            if (!isNaN(Number(id))) await updateProduct(id, updatedData);
-            setProducts((prev) =>
-                prev.map((p) => (p.id === id ? { ...p, ...updatedData } : p))
-            );
-            setSelectedProduct((prev) =>
-                prev && prev.id === id ? { ...prev, ...updatedData } : prev
-            );
-        } catch (error) { console.error(error); throw error; }
-    };
 
     const categories = ["All", ...new Set(products.map((p) => p.category))];
 
@@ -222,12 +182,70 @@ const ProductList = () => {
             {/* Hero */}
             <HeroBanner />
 
+            {/* Prominent Search Section */}
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 mt-8 animate-fade-in">
+                <div className="relative rounded-3xl p-6 md:p-8 flex flex-col items-center text-center overflow-hidden shadow-sm border border-[#ede8e2]" style={{ background: "linear-gradient(135deg, #fdfbf9 0%, #f7f4f0 100%)" }}>
+                    {/* Background subtle glow */}
+                    <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[#e8622a]/5 blur-3xl pointer-events-none" />
+                    <div className="absolute -left-16 -bottom-16 h-36 w-36 rounded-full bg-[#f59e0b]/5 blur-3xl pointer-events-none" />
+
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-[#e8622a] mb-1">Discover Products</h3>
+                    <p className="text-xl md:text-2xl font-black tracking-tight text-[#2c2420] mb-4">What are you looking for today?</p>
+
+                    {/* Styled Search Input */}
+                    <div 
+                        className="w-full max-w-xl flex items-center gap-3 rounded-full border px-5 py-3.5 bg-white border-[#e4dfd9] transition-all duration-300 focus-within:border-[#e8622a] focus-within:ring-4 focus-within:ring-[#e8622a]/10 focus-within:scale-[1.01] shadow-sm focus-within:shadow-md"
+                    >
+                        <svg className="h-5 w-5 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" style={{ color: search ? "#e8622a" : "#8c7e74" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="Search by title, category, brand..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full text-base outline-none font-medium bg-transparent text-[#2c2420] placeholder-[#a69c93]"
+                        />
+                        {search && (
+                            <button 
+                                onClick={() => setSearch("")} 
+                                className="text-[#8c7e74] hover:text-[#e8622a] hover:scale-110 active:scale-95 transition-all cursor-pointer font-extrabold text-sm px-1.5"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Quick Tags / Suggestions */}
+                    <div className="mt-4 flex flex-wrap justify-center gap-2 items-center text-xs">
+                        <span className="text-[#8c7e74] font-medium">Popular:</span>
+                        {[
+                            { label: "Electronics", val: "electronics" },
+                            { label: "Men's Clothing", val: "men's clothing" },
+                            { label: "Women's Clothing", val: "women's clothing" },
+                            { label: "Jewelery", val: "jewelery" }
+                        ].map(tag => (
+                            <button
+                                key={tag.label}
+                                onClick={() => {
+                                    setCategoryFilter(tag.val);
+                                    const target = document.getElementById("product-section");
+                                    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }}
+                                className="rounded-full px-3 py-1 bg-white border border-[#ede8e2] text-[#6b5e54] hover:border-[#e8622a] hover:text-[#e8622a] hover:bg-[#fff3ed] transition-all cursor-pointer shadow-sm hover:shadow"
+                            >
+                                {tag.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
             {/* Product section */}
             <div id="product-section" className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
 
                 {/* Section header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div className="flex flex-wrap items-center gap-6 mb-6">
                     <div>
                         <h2 className="text-xl font-bold" style={{ color: "#2c2420" }}>
                             {categoryFilter ? `${categoryFilter}` : "All Products"}
@@ -238,49 +256,29 @@ const ProductList = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Search */}
-                        <div
-                            className="flex items-center gap-2 rounded-xl border px-3 py-1.5 bg-[#fafafa] border-[#e4dfd9] transition-all duration-200 focus-within:bg-[#fafafa] focus-within:border-[#e8622a] focus-within:ring-4 focus-within:ring-[#e8622a]/10"
-                        >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ color: "#8c7e74" }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="Search products…"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-44 text-sm outline-none"
-                                style={{ background: "transparent", color: "#2c2420" }}
-                            />
-                            {search && (
-                                <button onClick={() => setSearch("")} style={{ color: "#8c7e74" }}>✕</button>
-                            )}
-                        </div>
-
-                        {/* Category clear */}
-                        {categoryFilter && (
+                        {/* Search chip */}
+                        {search && (
                             <button
-                                onClick={() => setCategoryFilter("")}
-                                className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all"
-                                style={{ background: "#fff3ed", borderColor: "#f9cbb3", color: "#e8622a" }}
+                                onClick={() => setSearch("")}
+                                className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm cursor-pointer hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600"
+                                style={{ background: "#fff5f5", borderColor: "#fed7d7", color: "#e53e3e" }}
+                                title="Clear Search"
                             >
-                                {categoryFilter} ✕
+                                Search: "{search}" ✕
                             </button>
                         )}
 
-                        {/* Add product */}
-                        <button
-                            id="add-product-btn"
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all hover:opacity-90"
-                            style={{ background: "#2c2420", color: "#ffffff" }}
-                        >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Product
-                        </button>
+                        {/* Category chip */}
+                        {categoryFilter && (
+                            <button
+                                onClick={() => setCategoryFilter("")}
+                                className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm cursor-pointer hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600"
+                                style={{ background: "#fff3ed", borderColor: "#f9cbb3", color: "#e8622a" }}
+                                title="Clear Category"
+                            >
+                                Category: {categoryFilter} ✕
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -452,8 +450,6 @@ const ProductList = () => {
                                     const p = products.find((item) => item.id === id);
                                     setSelectedProduct(p);
                                 }}
-                                onDelete={handleDeleteProduct}
-                                onEdit={(product) => setEditingProduct(product)}
                             />
                         ))}
                     </div>
@@ -465,23 +461,8 @@ const ProductList = () => {
                 <ProductDetails
                     product={selectedProduct}
                     onClose={() => setSelectedProduct(null)}
-                    onEdit={(product) => {
-                        setSelectedProduct(null);
-                        setEditingProduct(product);
-                    }}
                 />
             )}
-            <AddProductModal
-                isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                onAdd={handleAddProduct}
-            />
-            <EditProductModal
-                isOpen={!!editingProduct}
-                onClose={() => setEditingProduct(null)}
-                onUpdate={handleUpdateProduct}
-                product={editingProduct}
-            />
         </div>
     );
 };

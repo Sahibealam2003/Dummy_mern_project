@@ -28,3 +28,12 @@ export const logoutApi = async () => {
     const response = await AUTH_API.post("/logout");
     return response.data;
 };
+
+export const updateProfileApi = async (formData) => {
+    const response = await AUTH_API.put("/update-profile", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+    return response.data;
+};

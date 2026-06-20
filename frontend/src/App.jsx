@@ -10,7 +10,6 @@ import SpecialOffers from "./components/SpecialOffers";
 import Checkout from "./components/Checkout";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
-import AddProduct from "./components/AddProduct";
 import DummyPage from "./components/DummyPage";
 
 function AppContent({ isCartOpen, setIsCartOpen }) {
@@ -37,12 +36,11 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
       {/* Two-row navbar = 104px (64px top + 40px secondary) */}
       <main 
         className={isDealsPage ? "flex-1 flex items-center justify-center p-4" : "flex-1"} 
-        style={{ paddingTop: 104 }}
+        style={{ paddingTop: (location.pathname === "/login" || location.pathname === "/signup") ? 76 : 104 }}
       >
         <Routes>
           <Route path="/" element={<ProductList />} />
           <Route path="/products" element={<ProductList />} />
-          <Route path="/add-product" element={<AddProduct />} />
           <Route path="/todays-deals" element={<TodaysDeals />} />
           <Route path="/trending-products" element={<TrendingProducts />} />
           <Route path="/special-offers" element={<SpecialOffers />} />

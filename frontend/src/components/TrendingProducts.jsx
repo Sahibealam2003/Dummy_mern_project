@@ -1,17 +1,12 @@
 import { useEffect, useState } from "react";
-import { getAllProducts, deleteProduct, addProduct, updateProduct } from "../services/api";
+import { getAllProducts } from "../services/api";
 import ProductCard from "./ProductCard";
 import ProductDetails from "./ProductDetails";
-import AddProductModal from "./AddProductModal";
-import EditProductModal from "./EditProductModal";
-import { v4 as uuidv4 } from "uuid";
 
 const TrendingProducts = () => {
     const [products, setProducts]           = useState([]);
     const [loading, setLoading]             = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [isAddModalOpen, setIsAddModalOpen]   = useState(false);
-    const [editingProduct, setEditingProduct]   = useState(null);
     const [search, setSearch]               = useState("");
 
     const loadProducts = async () => {
@@ -28,42 +23,6 @@ const TrendingProducts = () => {
     };
 
     useEffect(() => { loadProducts(); }, []);
-
-    const handleDeleteProduct = async (id) => {
-        try {
-            await deleteProduct(id);
-            setProducts((prev) => prev.filter((p) => p.id !== id));
-        } catch (error) { console.error(error); }
-    };
-
-    const handleAddProduct = async (productDataFromModal) => {
-        const productData = {
-            id: uuidv4(),
-            title: productDataFromModal.title,
-            price: Number(productDataFromModal.price),
-            description: productDataFromModal.description,
-            category: productDataFromModal.category,
-            image: productDataFromModal.image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
-            rating: { rate: 5.0, count: 1 } // new products default high rating
-        };
-        try {
-            await addProduct(productData);
-            setProducts((prev) => [productData, ...prev]);
-            setSelectedProduct(productData);
-        } catch (error) { console.log(error); throw error; }
-    };
-
-    const handleUpdateProduct = async (id, updatedData) => {
-        try {
-            if (!isNaN(Number(id))) await updateProduct(id, updatedData);
-            setProducts((prev) =>
-                prev.map((p) => (p.id === id ? { ...p, ...updatedData } : p))
-            );
-            setSelectedProduct((prev) =>
-                prev && prev.id === id ? { ...prev, ...updatedData } : prev
-            );
-        } catch (error) { console.error(error); throw error; }
-    };
 
     const filtered = products.filter((p) => {
         return p.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -89,9 +48,10 @@ const TrendingProducts = () => {
                     <div className="flex items-center gap-3">
                         {/* Search */}
                         <div
-                            className="flex items-center gap-2 rounded-xl border px-3 py-1.5 bg-[#fafafa] border-[#e4dfd9] transition-all duration-200 focus-within:bg-white focus-within:border-[#e8622a] focus-within:ring-4 focus-within:ring-[#e8622a]/10"
+                            className="flex items-center gap-3 rounded-full border px-4 py-2 bg-white border-[#e4dfd9] transition-all duration-300 focus-within:border-[#e8622a] focus-within:ring-4 focus-within:ring-[#e8622a]/15 shadow-sm focus-within:shadow-md focus-within:w-64 w-48"
+                            style={{ transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
                         >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ color: "#8c7e74" }}>
+                            <svg className="h-4 w-4 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" style={{ color: search ? "#e8622a" : "#8c7e74" }}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                             </svg>
                             <input
@@ -99,25 +59,19 @@ const TrendingProducts = () => {
                                 placeholder="Search trending…"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-44 text-sm outline-none bg-transparent text-[#2c2420]"
+                                className="w-full text-sm outline-none font-medium bg-transparent text-[#2c2420] placeholder-[#a69c93]"
                             />
                             {search && (
-                                <button onClick={() => setSearch("")} style={{ color: "#8c7e74" }}>✕</button>
+                                <button 
+                                    onClick={() => setSearch("")} 
+                                    className="text-[#8c7e74] hover:text-[#e8622a] hover:scale-110 active:scale-95 transition-all cursor-pointer font-bold text-xs px-1"
+                                >
+                                    ✕
+                                </button>
                             )}
                         </div>
 
-                        {/* Add product */}
-                        <button
-                            id="add-product-btn"
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all hover:opacity-90 cursor-pointer"
-                            style={{ background: "#2c2420", color: "#ffffff" }}
-                        >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Product
-                        </button>
+
                     </div>
                 </div>
 
@@ -152,8 +106,6 @@ const TrendingProducts = () => {
                                     const p = products.find((item) => item.id === id);
                                     setSelectedProduct(p);
                                 }}
-                                onDelete={handleDeleteProduct}
-                                onEdit={(product) => setEditingProduct(product)}
                             />
                         ))}
                     </div>
@@ -165,23 +117,8 @@ const TrendingProducts = () => {
                 <ProductDetails
                     product={selectedProduct}
                     onClose={() => setSelectedProduct(null)}
-                    onEdit={(product) => {
-                        setSelectedProduct(null);
-                        setEditingProduct(product);
-                    }}
                 />
             )}
-            <AddProductModal
-                isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                onAdd={handleAddProduct}
-            />
-            <EditProductModal
-                isOpen={!!editingProduct}
-                onClose={() => setEditingProduct(null)}
-                onUpdate={handleUpdateProduct}
-                product={editingProduct}
-            />
         </div>
     );
 };

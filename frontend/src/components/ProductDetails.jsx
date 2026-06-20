@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getSingleProduct } from "../services/api";
 
-const ProductDetails = ({ product: initialProduct, onClose, onEdit }) => {
+const ProductDetails = ({ product: initialProduct, onClose }) => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -130,15 +130,6 @@ const ProductDetails = ({ product: initialProduct, onClose, onEdit }) => {
                                     </span>
                                 </div>
                                 <div className="flex gap-3">
-                                    <button
-                                        onClick={() => onEdit(product)}
-                                        className="btn-glow cursor-pointer rounded-xl bg-[#d97706] hover:bg-[#b45309] h-10 w-10 text-white shadow-lg shadow-[#d97706]/20 transition-all duration-200 flex items-center justify-center"
-                                        aria-label="Edit product"
-                                    >
-                                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M21,12a1,1,0,0,0-1,1v6a1,1,0,0,1-1,1H5a1,1,0,0,1-1-1V5A1,1,0,0,1,5,4h6a1,1,0,0,0,0-2H5A3,3,0,0,0,2,5V19a3,3,0,0,0,3,3H19a3,3,0,0,0,3-3V13A1,1,0,0,0,21,12ZM6,12.76V17a1,1,0,0,0,1,1h4.24a1,1,0,0,0,.71-.29l6.92-6.93h0L21.71,8a1,1,0,0,0,0-1.42L17.47,2.29a1,1,0,0,0-1.42,0L13.23,5.12h0L6.29,12.05A1,1,0,0,0,6,12.76ZM16.76,4.41l2.83,2.83L18.17,8.66,15.34,5.83ZM8,13.17l5.93-5.93,2.83,2.83L10.83,16H8Z"/>
-                                        </svg>
-                                    </button>
                                     <button
                                         onClick={onClose}
                                         className="btn-glow cursor-pointer rounded-xl border border-[#ede8e2] bg-white h-10 w-10 text-[#2c2420] hover:bg-[#fdf9f5] transition-all duration-200 flex items-center justify-center"

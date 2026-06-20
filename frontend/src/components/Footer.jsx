@@ -5,7 +5,6 @@ const YEAR = new Date().getFullYear();
 const links = {
     Product: [
         { name: "All Products", path: "/products" },
-        { name: "Add Product", path: "/add-product" },
         { name: "Categories", path: "/categories" },
         { name: "Featured", path: "/featured" },
     ],

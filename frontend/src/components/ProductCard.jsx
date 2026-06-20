@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, incrementQuantity, decrementQuantity } from "../reducers/cartSlice";
 
-const ProductCard = ({ product, onClick, onDelete, onEdit }) => {
-    const [deleting, setDeleting] = useState(false);
+const ProductCard = ({ product, onClick }) => {
     const [showRemovePopup, setShowRemovePopup] = useState(false);
     const popupRef = useRef(null);
     const dispatch = useDispatch();
@@ -26,12 +25,6 @@ const ProductCard = ({ product, onClick, onDelete, onEdit }) => {
     const handleDecrement = () => {
         if (quantityInCart === 1) setShowRemovePopup(true);
         else dispatch(decrementQuantity(product.id));
-    };
-
-    const handleDelete = async () => {
-        setDeleting(true);
-        try { await onDelete(product.id); }
-        finally { setDeleting(false); }
     };
 
     return (
@@ -78,38 +71,6 @@ const ProductCard = ({ product, onClick, onDelete, onEdit }) => {
                                 </g>
                             </g>
                         </svg>
-                    </button>
-
-                    {/* Edit Product */}
-                    <button
-                        id={`edit-product-${product.id}`}
-                        onClick={() => onEdit(product)}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md border border-[#ede8e2] text-[#8c7e74] hover:text-amber-600 hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                        title="Edit Product"
-                    >
-                        <svg fill="currentColor" className="h-4 w-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M21,12a1,1,0,0,0-1,1v6a1,1,0,0,1-1,1H5a1,1,0,0,1-1-1V5A1,1,0,0,1,5,4h6a1,1,0,0,0,0-2H5A3,3,0,0,0,2,5V19a3,3,0,0,0,3,3H19a3,3,0,0,0,3-3V13A1,1,0,0,0,21,12ZM6,12.76V17a1,1,0,0,0,1,1h4.24a1,1,0,0,0,.71-.29l6.92-6.93h0L21.71,8a1,1,0,0,0,0-1.42L17.47,2.29a1,1,0,0,0-1.42,0L13.23,5.12h0L6.29,12.05A1,1,0,0,0,6,12.76ZM16.76,4.41l2.83,2.83L18.17,8.66,15.34,5.83ZM8,13.17l5.93-5.93,2.83,2.83L10.83,16H8Z"/>
-                        </svg>
-                    </button>
-
-                    {/* Delete Product */}
-                    <button
-                        id={`delete-product-${product.id}`}
-                        onClick={handleDelete}
-                        disabled={deleting}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md border border-[#ede8e2] text-[#8c7e74] hover:text-red-600 hover:scale-110 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                        title="Delete Product"
-                    >
-                        {deleting ? (
-                            <svg className="h-3.5 w-3.5 animate-spin-slow text-red-600" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                        ) : (
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="currentColor"/>
-                            </svg>
-                        )}
                     </button>
                 </div>
 

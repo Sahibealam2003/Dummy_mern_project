@@ -1,8 +1,20 @@
 import Product from "../models/productModel.js";
+import redis from "../config/redis.js";
 
 // Get all products
 export const getProducts = async (req, res) => {
     try {
+        const cacheKey = "products:all";
+        try {
+            const cachedProducts = await redis.get(cacheKey);
+            if (cachedProducts) {
+                console.log("Serving all products from cache");
+                return res.status(200).json(JSON.parse(cachedProducts));
+            }
+        } catch (cacheError) {
+            console.error("Redis error fetching all products:", cacheError);
+        }
+
         const products = await Product.find({}).sort({ createdAt: -1 });
         const mapped = products.map(p => ({
             id: p._id.toString(),
@@ -14,6 +26,14 @@ export const getProducts = async (req, res) => {
             image: p.image,
             rating: p.rating
         }));
+
+        try {
+            await redis.set(cacheKey, JSON.stringify(mapped), "EX", 3600);
+            console.log("Cached all products in Redis");
+        } catch (cacheError) {
+            console.error("Redis error caching all products:", cacheError);
+        }
+
         res.status(200).json(mapped);
     } catch (error) {
         console.error("Error fetching products:", error);
@@ -24,11 +44,24 @@ export const getProducts = async (req, res) => {
 // Get single product by ID
 export const getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const { id } = req.params;
+        const cacheKey = `product:${id}`;
+        try {
+            const cachedProduct = await redis.get(cacheKey);
+            if (cachedProduct) {
+                console.log(`Serving product ${id} from cache`);
+                return res.status(200).json(JSON.parse(cachedProduct));
+            }
+        } catch (cacheError) {
+            console.error("Redis error fetching single product:", cacheError);
+        }
+
+        const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
-        res.status(200).json({
+
+        const mappedProduct = {
             id: product._id.toString(),
             _id: product._id,
             title: product.title,
@@ -37,7 +70,16 @@ export const getProductById = async (req, res) => {
             category: product.category,
             image: product.image,
             rating: product.rating
-        });
+        };
+
+        try {
+            await redis.set(cacheKey, JSON.stringify(mappedProduct), "EX", 3600);
+            console.log(`Cached product ${id} in Redis`);
+        } catch (cacheError) {
+            console.error("Redis error caching single product:", cacheError);
+        }
+
+        res.status(200).json(mappedProduct);
     } catch (error) {
         console.error("Error fetching single product:", error);
         res.status(500).json({ error: "Failed to fetch product" });
@@ -62,6 +104,14 @@ export const createProduct = async (req, res) => {
             rating: { rate: 4.0, count: 1 }
         });
 
+        // Invalidate all products cache
+        try {
+            await redis.del("products:all");
+            console.log("Invalidated products:all cache");
+        } catch (cacheError) {
+            console.error("Redis error invalidating products cache:", cacheError);
+        }
+
         res.status(201).json({
             id: product._id.toString(),
             _id: product._id,
@@ -82,7 +132,8 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const { title, price, description, category, image } = req.body;
-        const product = await Product.findById(req.params.id);
+        const { id } = req.params;
+        const product = await Product.findById(id);
 
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
@@ -95,6 +146,15 @@ export const updateProduct = async (req, res) => {
         if (image !== undefined) product.image = image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80";
 
         await product.save();
+
+        // Invalidate cache
+        try {
+            await redis.del("products:all");
+            await redis.del(`product:${id}`);
+            console.log(`Invalidated cache for product:${id} and products:all`);
+        } catch (cacheError) {
+            console.error("Redis error invalidating product cache on update:", cacheError);
+        }
         
         res.status(200).json({
             id: product._id.toString(),
@@ -115,12 +175,23 @@ export const updateProduct = async (req, res) => {
 // Delete product (Admin only)
 export const deleteProduct = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const { id } = req.params;
+        const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        await Product.findByIdAndDelete(req.params.id);
+        await Product.findByIdAndDelete(id);
+
+        // Invalidate cache
+        try {
+            await redis.del("products:all");
+            await redis.del(`product:${id}`);
+            console.log(`Invalidated cache for product:${id} and products:all on deletion`);
+        } catch (cacheError) {
+            console.error("Redis error invalidating product cache on deletion:", cacheError);
+        }
+
         res.status(200).json({ success: true, message: "Product deleted successfully" });
     } catch (error) {
         console.error("Error deleting product:", error);

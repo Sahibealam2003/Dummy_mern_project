@@ -3,10 +3,15 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getSingleProduct, deleteProductApi } from "../services/api";
 
-const ProductDetails = ({ product: initialProduct, onClose }) => {
+const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Delete Confirmation Modal State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
 
     const navigate = useNavigate();
     const { isLoggedIn, user } = useSelector((state) => state.auth);
@@ -23,6 +28,33 @@ const ProductDetails = ({ product: initialProduct, onClose }) => {
         document.body.style.overflow = "hidden";
         return () => { document.body.style.overflow = ""; };
     }, []);
+
+    const handleDeleteClick = () => {
+        setDeleteError("");
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!product) return;
+        setDeleteLoading(true);
+        setDeleteError("");
+        try {
+            const productId = product.id || product._id;
+            await deleteProductApi(productId);
+            setDeleteModalOpen(false);
+            onClose();
+            if (onDeleteSuccess) {
+                onDeleteSuccess(productId);
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error("Delete product error:", err);
+            setDeleteError(err.response?.data?.error || "Failed to delete product. Please try again.");
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -139,18 +171,7 @@ const ProductDetails = ({ product: initialProduct, onClose }) => {
                                     {isAdmin && product && (
                                         <>
                                             <button
-                                                onClick={async () => {
-                                                    if (window.confirm(`Are you sure you want to delete "${product.title}"?`)) {
-                                                        try {
-                                                            await deleteProductApi(product.id || product._id);
-                                                            onClose();
-                                                            window.location.reload();
-                                                        } catch (err) {
-                                                            console.error(err);
-                                                            alert("Failed to delete product");
-                                                        }
-                                                    }
-                                                }}
+                                                onClick={handleDeleteClick}
                                                 className="btn-glow cursor-pointer rounded-xl bg-rose-600 text-white h-10 px-4 shadow-md shadow-rose-600/25 hover:shadow-rose-600/40 hover:bg-rose-750 transition-all duration-200 flex items-center justify-center gap-1.5 font-bold text-xs border border-rose-500 hover:scale-[1.02] active:scale-[0.98]"
                                                 title="Delete Product"
                                             >
@@ -184,6 +205,81 @@ const ProductDetails = ({ product: initialProduct, onClose }) => {
                                         </svg>
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal: Confirm Deletion */}
+                {deleteModalOpen && (
+                    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 backdrop-blur-md bg-[#2c2420]/45 animate-fade-in">
+                        <div className="absolute inset-0 cursor-pointer" onClick={() => !deleteLoading && setDeleteModalOpen(false)} />
+
+                        <div className="glass relative w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl animate-scale-in text-center">
+                            <button
+                                onClick={() => setDeleteModalOpen(false)}
+                                disabled={deleteLoading}
+                                className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#ede8e2] bg-white text-[#8c7e74] hover:rotate-90 hover:text-[#2c2420] transition-all cursor-pointer"
+                            >
+                                ✕
+                            </button>
+
+                            {/* Danger Icon */}
+                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 border border-rose-100 text-rose-600">
+                                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+
+                            <h3 className="text-lg font-black text-[#2c2420] mb-2">
+                                Confirm Deletion
+                            </h3>
+                            <p className="text-xs text-[#8c7e74] mb-5 font-medium leading-relaxed">
+                                Are you sure you want to permanently delete this product? This action cannot be undone.
+                            </p>
+
+                            {/* Preview Section */}
+                            {product && (
+                                <div className="mb-6 rounded-xl border border-[#ede8e2] bg-[#fafafa]/50 p-4 text-left flex items-center gap-3">
+                                    <div className="h-12 w-12 shrink-0 rounded-lg bg-white border border-[#ede8e2] flex items-center justify-center p-1 overflow-hidden">
+                                        <img
+                                            src={product.image}
+                                            alt={product.title}
+                                            className="max-h-full max-w-full object-contain"
+                                        />
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <p className="text-xs font-bold text-[#2c2420] truncate">
+                                            {product.title}
+                                        </p>
+                                        <p className="text-[10px] text-[#2c7a4a] font-extrabold mt-0.5">
+                                            ${product.price?.toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {deleteError && (
+                                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600 animate-shake text-left">
+                                    {deleteError}
+                                </div>
+                            )}
+
+                            <div className="flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={confirmDelete}
+                                    disabled={deleteLoading}
+                                    className="w-full rounded-xl bg-rose-600 text-white hover:bg-rose-700 px-6 py-2.5 text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                >
+                                    {deleteLoading && (
+                                        <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                    )}
+                                    {deleteLoading ? "Deleting..." : "Yes, Delete"}
+                                </button>
                             </div>
                         </div>
                     </div>

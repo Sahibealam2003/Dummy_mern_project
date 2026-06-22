@@ -207,12 +207,7 @@ const Navbar = ({ onCartOpen }) => {
                         </button>
                     )}
 
-                    {/* Wishlist */}
-                    <button className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:bg-rose-50 hover:scale-105 active:scale-95 group cursor-pointer">
-                        <svg className="h-5 w-5 text-[#2c2420] group-hover:text-rose-500 group-hover:fill-rose-500 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                    </button>
+
 
                     {/* User Profile / Auth Button */}
                     <div className="relative" ref={dropdownRef}>

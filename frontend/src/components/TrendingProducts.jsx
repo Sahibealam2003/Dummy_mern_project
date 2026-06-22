@@ -106,6 +106,9 @@ const TrendingProducts = () => {
                                     const p = products.find((item) => item.id === id);
                                     setSelectedProduct(p);
                                 }}
+                                onDeleteSuccess={(id) => {
+                                    setProducts(prev => prev.filter(p => p.id !== id && p._id !== id));
+                                }}
                             />
                         ))}
                     </div>
@@ -117,6 +120,9 @@ const TrendingProducts = () => {
                 <ProductDetails
                     product={selectedProduct}
                     onClose={() => setSelectedProduct(null)}
+                    onDeleteSuccess={(id) => {
+                        setProducts(prev => prev.filter(p => p.id !== id && p._id !== id));
+                    }}
                 />
             )}
         </div>

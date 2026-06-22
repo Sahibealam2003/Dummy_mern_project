@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { signupSuccess } from "../reducers/authSlice";
@@ -29,6 +29,7 @@ const Signup = () => {
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const isSubmitting = useRef(false);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -46,7 +47,7 @@ const Signup = () => {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     };
 
-    // Live Password Strength Criteria Checks
+    // Password Strength Criteria Checks
     const checkLength = password.length >= 6;
     const checkNumOrSymbol = /[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password);
     const checkUpperLower = /[a-z]/.test(password) && /[A-Z]/.test(password);
@@ -54,6 +55,7 @@ const Signup = () => {
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting.current) return;
         setError("");
         setSuccessMessage("");
 
@@ -67,6 +69,7 @@ const Signup = () => {
             return;
         }
 
+        isSubmitting.current = true;
         setLoading(true);
 
         try {
@@ -92,14 +95,18 @@ const Signup = () => {
             console.error("Auth error:", err);
             setError(err.response?.data?.error || "Something went wrong. Please try again.");
         } finally {
+            isSubmitting.current = false;
             setLoading(false);
         }
     };
 
     const handleOtpSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting.current) return;
         setError("");
         setSuccessMessage("");
+        
+        isSubmitting.current = true;
         setLoading(true);
 
         try {
@@ -115,6 +122,7 @@ const Signup = () => {
             console.error("OTP Verification error:", err);
             setError(err.response?.data?.error || "Invalid or expired OTP.");
         } finally {
+            isSubmitting.current = false;
             setLoading(false);
         }
     };

@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
 import { addEmailToQueue } from "../queues/emailQueue.js";
+import redis from "../config/redis.js"
+import bcrypt from "bcrypt";
 
 const tempUsers = new Map();
 
@@ -20,14 +22,6 @@ export const signup = async (req, res) => {
         } = req.body;
 
 
-        console.log("Signup Request Received. Body:", {
-            name: req.body?.name,
-            email: req.body?.email,
-            password: req.body?.password ? "[HIDDEN]" : undefined,
-            phoneNumber: req.body?.phoneNumber,
-            avatar: req.body?.avatar
-        });
-
         if (!name || !email || !password || !phoneNumber) {
             console.log("Signup Validation Failed: Missing required fields:", {
                 name: !name,
@@ -39,7 +33,7 @@ export const signup = async (req, res) => {
                 error: "All fields are required"
             });
         }
-
+ 
 
         const existingUser = await User.findOne({ email });
 
@@ -67,21 +61,32 @@ export const signup = async (req, res) => {
                 });
             }
         } else {
-            // Generate initials avatar URL if no avatar file was uploaded
             avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e8622a&color=fff&bold=true`;
         }
 
-        // Store unverified data in memory map
-        tempUsers.set(email.toLowerCase(), {
-            name,
-            email: email.toLowerCase(),
-            password,
-            phoneNumber,
-            role: role || "user",
-            avatar: avatarUrl,
-            otp: otp.toString(),
-            expireAt: Date.now() + 10 * 60 * 1000
-        });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const lowerCaseEmail = email.toLowerCase();
+        const tempUserKey = `temp_user:${lowerCaseEmail}`;
+        await redis.set(
+            tempUserKey,
+            JSON.stringify({
+                name,
+                email,
+                password: hashedPassword,
+                phoneNumber,
+                avatar: avatarUrl,
+                role: role || "user",
+                otp: otp.toString(),
+                expireAt: Date.now() + 10 * 60 * 1000
+            }),
+            "EX",
+            600
+        );
+        console.log("store in redis");
+
+        // Reset verification attempts
+        await redis.del(`otp_attempts:${lowerCaseEmail}`);
+        await redis.del(`otp_blocked:${lowerCaseEmail}`);
 
         try {
             const message = `Welcome to our platform! Your email verification OTP is ${otp}. It is valid for 10 minutes.`;
@@ -90,6 +95,7 @@ export const signup = async (req, res) => {
                 subject: "Verify your email - OTP",
                 message
             });
+            console.log("OTP sent");
         } catch (emailError) {
             console.log("Error sending verification email:", emailError);
         }
@@ -114,7 +120,6 @@ export const signup = async (req, res) => {
     }
 
 };
-
 
 export const login = async (req, res) => {
 
@@ -206,28 +211,51 @@ export const verifyOTP = async (req, res) => {
             });
         }
 
-        const tempData = tempUsers.get(email.toLowerCase());
+        const lowerCaseEmail = email.toLowerCase();
+        const blockedKey = `otp_blocked:${lowerCaseEmail}`;
+        const attemptsKey = `otp_attempts:${lowerCaseEmail}`;
+        const tempUserKey = `temp_user:${lowerCaseEmail}`;
 
-        if (!tempData) {
-            return res.status(400).json({
-                error: "Verification session not found. Please sign up again."
+        // checked blocked user
+        const isBlocked = await redis.get(blockedKey);
+        if (isBlocked) {
+            return res.status(429).json({
+                error: "Too many failed attempts. Please try again after 5 minutes."
             });
         }
 
-        if (tempData.expireAt < Date.now()) {
-            tempUsers.delete(email.toLowerCase());
+        const userData = await redis.get(tempUserKey);
+        if (!userData) {
             return res.status(400).json({
-                error: "Verification session expired. Please sign up again."
+                error: "Verification session expired or not found. Please sign up again."
             });
         }
 
+        const tempData = JSON.parse(userData);
+
+        // OTP verification validation
         if (tempData.otp !== otp.toString()) {
+            const attempts = await redis.incr(attemptsKey);
+
+            if (attempts === 1) {
+                await redis.expire(attemptsKey, 600);
+            }
+
+       //rate limiting
+            if (attempts >= 3) {
+                await redis.set(blockedKey, "true", "EX", 300);
+                await redis.del(attemptsKey);
+                return res.status(429).json({
+                    error: "You have exceeded 3 incorrect attempts. Blocked for 5 minutes."
+                });
+            }
+
             return res.status(400).json({
-                error: "Invalid OTP"
+                error: `Invalid OTP. You have ${3 - attempts} attempts left.`
             });
         }
 
-        // Save verified user to MongoDB
+        // res
         const user = await User.create({
             name: tempData.name,
             email: tempData.email,
@@ -238,19 +266,24 @@ export const verifyOTP = async (req, res) => {
             isVerified: true
         });
 
-        // Delete unverified signup cache
-        tempUsers.delete(email.toLowerCase());
+        // Redis keys cleanup
+        await redis.del(tempUserKey);
+        await redis.del(attemptsKey);
+        await redis.del(blockedKey);
+        console.log("OTP verify");
 
+        // Welcome Email send alert queue
         try {
             await addEmailToQueue({
                 email: user.email,
                 subject: "Welcome to Our Platform!",
-                message: `Hi ${user.name},\n\nWelcome to our platform! Your account has been verified successfully. We are excited to have you on board.\n\nBest regards,\nSupport Team`
+                message: `Hi ${user.name},\n\nWelcome! Your account verified successfully.\n\nBest regards,\nSupport Team`
             });
         } catch (emailError) {
             console.log("Error sending welcome email:", emailError);
         }
 
+        // JWT token generate
         const token = jwt.sign(
             { id: user._id },
             process.env.JWT_SECRET || "secretkey",
@@ -328,7 +361,7 @@ export const getTempUsers = (req, res) => {
         expireAt: data.expireAt
     }));
     res.json(list);
-};
+}
 
 export const updateProfile = async (req, res) => {
     try {

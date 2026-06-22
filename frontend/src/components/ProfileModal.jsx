@@ -3,9 +3,9 @@ import { useDispatch } from "react-redux";
 import { updateUser } from "../reducers/authSlice";
 import { updateProfileApi } from "../services/authApi";
 
-const INFO_ROW_CLS = "flex flex-col border-b border-[#f5f3ef] pb-1 last:border-0 last:pb-0";
-const INFO_LABEL_CLS = "text-[10px] font-extrabold uppercase tracking-widest text-[#8c7e74] mb-1";
-const INFO_VAL_CLS = "text-sm font-semibold text-[#2c2420]";
+const INFO_ROW_CLS = "flex flex-col border-b border-[#f5f3ef] pb-0.5 last:border-0 last:pb-0";
+const INFO_LABEL_CLS = "text-[9px] font-extrabold uppercase tracking-widest text-[#8c7e74] mb-0.5";
+const INFO_VAL_CLS = "text-xs font-semibold text-[#2c2420]";
 
 const ProfileModal = ({ isOpen, onClose, user }) => {
     const dispatch = useDispatch();
@@ -118,7 +118,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
             <div className="absolute inset-0 cursor-pointer" onClick={loading ? undefined : onClose} />
 
             {/* Modal Box */}
-            <div className="animate-scale-in glass relative w-full max-w-sm overflow-hidden rounded-2xl p-6 shadow-2xl shadow-black/10 md:p-8">
+            <div className="animate-scale-in glass relative w-full max-w-sm overflow-hidden rounded-2xl p-5 shadow-2xl shadow-black/10 max-h-[95vh] overflow-y-auto">
                 {/* Edit / Save Button (absolute top-4 left-4) */}
                 {!isEditing ? (
                     <button
@@ -167,16 +167,16 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                 </button>
 
                 {/* Profile Header */}
-                <div className="flex flex-col items-center mb-4 pt-2">
-                    <span className="rounded-full bg-[#fff3ed] border border-[#e8622a]/20 px-3 text-[9px] font-bold uppercase tracking-widest text-[#e8622a] mb-2">
+                <div className="flex flex-col items-center mb-2 pt-1">
+                    <span className="rounded-full bg-[#fff3ed] border border-[#e8622a]/20 px-2.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#e8622a] mb-1.5">
                         Member Account
                     </span>
 
                     {/* Circle Avatar (Interactive in Edit Mode) */}
-                    <div className="relative group mb-3 select-none">
+                    <div className="relative group mb-2 select-none">
                         <div 
                             onClick={() => isEditing && !loading && fileInputRef.current?.click()}
-                            className={`h-20 w-20 rounded-full overflow-hidden border-2 shadow-lg relative flex items-center justify-center ${
+                            className={`h-16 w-16 rounded-full overflow-hidden border-2 shadow-lg relative flex items-center justify-center ${
                                 isEditing ? "border-[#e8622a] cursor-pointer hover:border-[#d94e14] transition-all hover:scale-105" : "border-[#e8622a]/30"
                             }`}
                         >
@@ -221,34 +221,34 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                         />
                     </div>
 
-                    <h2 className="text-xl font-bold tracking-tight text-[#2c2420]">
+                    <h2 className="text-lg font-bold tracking-tight text-[#2c2420]">
                         {isEditing ? (name || "New Member") : user.name}
                     </h2>
-                    <p className="text-xs text-[#8c7e74] font-medium mt-0.5">
+                    <p className="text-[11px] text-[#8c7e74] font-medium mt-0.5">
                         {user.email}
                     </p>
                 </div>
 
                 {/* Error & Success Messages */}
                 {error && (
-                    <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-600 animate-shake">
+                    <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-semibold text-rose-600 animate-shake">
                         {error}
                     </div>
                 )}
                 {successMsg && (
-                    <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700">
+                    <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-700">
                         {successMsg}
                     </div>
                 )}
 
                 {/* Profile Form Details */}
-                <form id="profile-edit-form" onSubmit={handleSave} className="space-y-4 mb-5">
-                    <div className="bg-[#fafafa]/50 border border-[#ede8e2] rounded-xl p-4 space-y-4">
+                <form id="profile-edit-form" onSubmit={handleSave} className="space-y-3 mb-2">
+                    <div className="bg-[#fafafa]/50 border border-[#ede8e2] rounded-xl p-3.5 space-y-3">
                         {/* Name Input / Row */}
-                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1.5 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
+                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
                             <span className={INFO_LABEL_CLS}>Full Name</span>
                             {isEditing ? (
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 mt-0.5">
                                     <svg className="h-4 w-4 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
@@ -257,7 +257,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                                         value={name} 
                                         onChange={(e) => setName(e.target.value)} 
                                         disabled={loading}
-                                        className="w-full bg-transparent text-sm font-semibold text-[#2c2420] outline-none placeholder-stone-400"
+                                        className="w-full bg-transparent text-xs font-semibold text-[#2c2420] outline-none placeholder-stone-400"
                                         required
                                         minLength={3}
                                     />
@@ -268,10 +268,10 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                         </div>
 
                         {/* Role Row */}
-                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1.5 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
+                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
                             <span className={INFO_LABEL_CLS}>Account Role</span>
                             {isEditing ? (
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 mt-0.5">
                                     <svg className="h-4 w-4 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                     </svg>
@@ -279,7 +279,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                                         value={role}
                                         onChange={(e) => setRole(e.target.value)}
                                         disabled={loading}
-                                        className="w-full bg-transparent text-sm font-semibold text-[#2c2420] outline-none border-none py-1 cursor-pointer"
+                                        className="w-full bg-transparent text-xs font-semibold text-[#2c2420] outline-none border-none py-0.5 cursor-pointer"
                                     >
                                         <option value="user">User</option>
                                         <option value="admin">Admin</option>
@@ -288,7 +288,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                             ) : (
                                 <span className="inline-flex items-center gap-1.5 mt-0.5">
                                     <span className={`h-2.5 w-2.5 rounded-full ${user.role === "admin" ? "bg-amber-500" : "bg-blue-500"}`} />
-                                    <span className="text-sm font-bold uppercase tracking-wider" style={{ color: user.role === "admin" ? "#d97706" : "#2563eb" }}>
+                                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: user.role === "admin" ? "#d97706" : "#2563eb" }}>
                                         {user.role === "admin" ? "Admin" : "Standard User"}
                                     </span>
                                 </span>
@@ -302,10 +302,10 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                         </div>
 
                         {/* Phone Number Input / Row */}
-                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1.5 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
+                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
                             <span className={INFO_LABEL_CLS}>Phone Number</span>
                             {isEditing ? (
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 mt-0.5">
                                     <svg className="h-4 w-4 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                     </svg>
@@ -314,7 +314,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                                         value={phoneNumber} 
                                         onChange={(e) => setPhoneNumber(e.target.value)} 
                                         disabled={loading}
-                                        className="w-full bg-transparent text-sm font-semibold text-[#2c2420] outline-none placeholder-stone-400"
+                                        className="w-full bg-transparent text-xs font-semibold text-[#2c2420] outline-none placeholder-stone-400"
                                         placeholder="Enter phone number"
                                     />
                                 </div>

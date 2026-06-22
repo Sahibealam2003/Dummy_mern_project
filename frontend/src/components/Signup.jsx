@@ -15,6 +15,7 @@ const Signup = () => {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [role, setRole] = useState("user");
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState("");
 
@@ -74,6 +75,7 @@ const Signup = () => {
             formData.append("email", email);
             formData.append("password", password);
             formData.append("phoneNumber", phoneNumber);
+            formData.append("role", role);
             if (avatarFile) {
                 formData.append("avatar", avatarFile);
             }
@@ -315,6 +317,22 @@ const Signup = () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 )}
+                            </div>
+
+                            {/* Account Role Dropdown */}
+                            <div className="relative flex items-center border-b border-stone-200 focus-within:border-[#e8622a] text-stone-400 focus-within:text-[#e8622a] transition-all duration-300 py-1.5">
+                                <svg className="h-4.5 w-4.5 mr-2.5 shrink-0 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                <select
+                                    id="role-select"
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    className="w-full bg-transparent text-[13px] text-stone-850 placeholder-stone-400 outline-none font-medium border-none py-0.5 cursor-pointer"
+                                >
+                                    <option value="user">Standard User</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
                             </div>
 
                             {/* Email Address */}

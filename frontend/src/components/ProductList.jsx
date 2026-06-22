@@ -220,6 +220,7 @@ const ProductList = () => {
                     <div className="mt-4 flex flex-wrap justify-center gap-2 items-center text-xs">
                         <span className="text-[#8c7e74] font-medium">Popular:</span>
                         {[
+                            { label: "All Products", val: "" },
                             { label: "Electronics", val: "electronics" },
                             { label: "Men's Clothing", val: "men's clothing" },
                             { label: "Women's Clothing", val: "women's clothing" },

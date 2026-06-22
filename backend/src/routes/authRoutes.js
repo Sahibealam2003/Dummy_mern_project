@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/signup", upload.single("avatar"), signup);
 router.post("/verify-otp", verifyOTP);
 router.post("/login", login);
-router.post("/logout", logout);
+router.post("/logout", protect, logout);
 router.get("/test-otps", getTempUsers);
 router.put("/update-profile", protect, upload.single("avatar"), updateProfile);
 

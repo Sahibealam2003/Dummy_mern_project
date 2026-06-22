@@ -8,7 +8,6 @@ const connection = new IORedis({
     maxRetriesPerRequest: null
 });
 
-
 const emailWorker = new Worker("EmailQueue", async (job) => {
     console.log(`Processing Job ID: ${job.id}`);
     const { email, subject, message } = job.data;

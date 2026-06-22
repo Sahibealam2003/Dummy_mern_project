@@ -2,8 +2,8 @@ import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
+import { addEmailToQueue } from "../queues/emailQueue.js";
 
-// Temporary unverified user signup cache
 const tempUsers = new Map();
 
 export const signup = async (req, res) => {
@@ -15,7 +15,8 @@ export const signup = async (req, res) => {
             email, 
             password, 
             phoneNumber, 
-            avatar 
+            avatar,
+            role
         } = req.body;
 
 
@@ -76,6 +77,7 @@ export const signup = async (req, res) => {
             email: email.toLowerCase(),
             password,
             phoneNumber,
+            role: role || "user",
             avatar: avatarUrl,
             otp: otp.toString(),
             expireAt: Date.now() + 10 * 60 * 1000
@@ -161,6 +163,16 @@ export const login = async (req, res) => {
             sameSite: "lax"
         };
 
+        try {
+            await addEmailToQueue({
+                email: user.email,
+                subject: "Login Alert - Successful Login",
+                message: `Hi ${user.name},\n\nYou have successfully logged into your account on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}.\n\nIf this wasn't you, please secure your account immediately.\n\nBest regards,\nSupport Team`
+            });
+        } catch (emailError) {
+            console.log("Error sending login alert email:", emailError);
+        }
+
         res.status(200).cookie("token", token, cookieOptions).json({
             success: true,
             message: "Login successful",
@@ -171,7 +183,8 @@ export const login = async (req, res) => {
                 email: user.email,
                 phoneNumber: user.phoneNumber,
                 avatar: user.avatar,
-                isVerified: user.isVerified
+                isVerified: user.isVerified,
+                role: user.role
             }
         });
 
@@ -221,11 +234,22 @@ export const verifyOTP = async (req, res) => {
             password: tempData.password,
             phoneNumber: tempData.phoneNumber,
             avatar: tempData.avatar,
+            role: tempData.role || "user",
             isVerified: true
         });
 
         // Delete unverified signup cache
         tempUsers.delete(email.toLowerCase());
+
+        try {
+            await addEmailToQueue({
+                email: user.email,
+                subject: "Welcome to Our Platform!",
+                message: `Hi ${user.name},\n\nWelcome to our platform! Your account has been verified successfully. We are excited to have you on board.\n\nBest regards,\nSupport Team`
+            });
+        } catch (emailError) {
+            console.log("Error sending welcome email:", emailError);
+        }
 
         const token = jwt.sign(
             { id: user._id },
@@ -250,7 +274,8 @@ export const verifyOTP = async (req, res) => {
                 email: user.email,
                 phoneNumber: user.phoneNumber,
                 avatar: user.avatar,
-                isVerified: user.isVerified
+                isVerified: user.isVerified,
+                role: user.role
             }
         });
 
@@ -264,12 +289,25 @@ export const verifyOTP = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
+        const user = req.user;
         const cookieOptions = {
             expires: new Date(Date.now()),
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax"
         };
+
+        if (user) {
+            try {
+                await addEmailToQueue({
+                    email: user.email,
+                    subject: "Account Logout Notification",
+                    message: `Hi ${user.name},\n\nYou have successfully logged out of your account on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}.\n\nIf you did not perform this logout, please secure your account immediately.\n\nBest regards,\nSupport Team`
+                });
+            } catch (queueError) {
+                console.log("Error queuing logout email:", queueError);
+            }
+        }
 
         res.status(200).cookie("token", null, cookieOptions).json({
             success: true,
@@ -295,7 +333,7 @@ export const getTempUsers = (req, res) => {
 export const updateProfile = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { name, phoneNumber } = req.body;
+        const { name, phoneNumber, role } = req.body;
 
         const user = await User.findById(userId);
         if (!user) {
@@ -304,6 +342,7 @@ export const updateProfile = async (req, res) => {
 
         if (name) user.name = name.trim();
         if (phoneNumber !== undefined) user.phoneNumber = phoneNumber.trim();
+        if (role !== undefined) user.role = role;
 
         if (req.file) {
             try {
@@ -326,7 +365,8 @@ export const updateProfile = async (req, res) => {
                 email: user.email,
                 phoneNumber: user.phoneNumber,
                 avatar: user.avatar,
-                isVerified: user.isVerified
+                isVerified: user.isVerified,
+                role: user.role
             }
         });
     } catch (error) {

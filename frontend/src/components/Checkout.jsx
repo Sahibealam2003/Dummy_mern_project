@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { clearCart } from "../reducers/cartSlice";
+import { getAllSpecialOffers } from "../services/api";
 
 const FIELD_CLS = "w-full rounded-xl border border-[#e4dfd9] bg-[#fafafa] px-4 py-2 text-sm text-[#2c2420] placeholder-[#a69c93] outline-none focus:bg-[#fafafa] focus:border-[#e8622a] focus:ring-4 focus:ring-[#e8622a]/10 transition-all duration-200";
 const LABEL_CLS = "block text-xs font-semibold uppercase tracking-wider text-[#8c7e74] mb-1.5";
@@ -18,6 +19,9 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     const [name, setName] = useState(user?.name || "");
     const [email, setEmail] = useState(user?.email || "");
     const [address, setAddress] = useState("");
+    
+    // Special Offers state
+    const [offers, setOffers] = useState([]);
     const [city, setCity] = useState("");
     const [zip, setZip] = useState("");
     const [cardName, setCardName] = useState("");
@@ -39,8 +43,10 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     useEffect(() => {
         if (!isLoggedIn) {
             navigate("/login?redirect=/checkout");
+        } else if (user?.role === "admin") {
+            navigate("/");
         }
-    }, [isLoggedIn, navigate]);
+    }, [isLoggedIn, user, navigate]);
 
     useEffect(() => {
         if (user) {
@@ -48,6 +54,18 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
             setEmail((e) => e || user.email || "");
         }
     }, [user]);
+
+    useEffect(() => {
+        const fetchOffers = async () => {
+            try {
+                const data = await getAllSpecialOffers();
+                setOffers(data);
+            } catch (err) {
+                console.error("Failed to load offers in Checkout:", err);
+            }
+        };
+        fetchOffers();
+    }, []);
 
     useEffect(() => {
         if (step === "processing" || step === "success") {
@@ -244,12 +262,32 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     // Calculations
     const shipping = 0.0;
     const tax = totalPrice * 0.1;
-    const promoDiscount = promoApplied ? totalPrice * 0.1 : 0.0;
+    
+    const getDiscountPercentage = () => {
+        if (!promoApplied) return 0.0;
+        const codeToApply = promoInput.trim().toUpperCase();
+        const matchingOffer = offers.find(o => o.code === codeToApply);
+        if (matchingOffer) {
+            const match = matchingOffer.discount.match(/(\d+)%/);
+            if (match) {
+                return Number(match[1]) / 100;
+            }
+            if (matchingOffer.discount.toUpperCase().includes("FREE SHIPPING")) {
+                return 0.0;
+            }
+        }
+        if (codeToApply === "SHOP10") return 0.1;
+        return 0.0;
+    };
+
+    const promoDiscount = promoApplied ? totalPrice * getDiscountPercentage() : 0.0;
     const finalTotal = totalPrice + tax + shipping - promoDiscount;
 
     const handleApplyPromo = (e) => {
         e.preventDefault();
-        if (promoInput.trim().toUpperCase() === "SHOP10") {
+        const codeToApply = promoInput.trim().toUpperCase();
+        const matchingOffer = offers.find(o => o.code === codeToApply);
+        if (matchingOffer || codeToApply === "SHOP10") {
             setPromoApplied(true);
             setPromoError("");
         } else {

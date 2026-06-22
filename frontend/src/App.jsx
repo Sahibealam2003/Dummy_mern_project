@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import ProductList from "./components/ProductList";
 import Navbar from "./components/Navbar";
@@ -11,11 +12,15 @@ import Checkout from "./components/Checkout";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import DummyPage from "./components/DummyPage";
+import AdminPanel from "./components/AdminPanel";
 
 function AppContent({ isCartOpen, setIsCartOpen }) {
   const location = useLocation();
   const isDealsPage = location.pathname === "/todays-deals";
   const [showFooter, setShowFooter] = useState(true);
+  
+  const { isLoggedIn, user } = useSelector((state) => state.auth);
+  const isAdmin = isLoggedIn && user?.role === "admin";
 
   React.useEffect(() => {
     if (location.pathname === "/checkout" || location.pathname === "/login" || location.pathname === "/signup") {
@@ -46,6 +51,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
           <Route path="/special-offers" element={<SpecialOffers />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/admin" element={<AdminPanel />} />
           <Route 
             path="/checkout" 
             element={
@@ -73,7 +79,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
         </Routes>
       </main>
       {!isDealsPage && showFooter && <Footer />}
-      <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      {!isAdmin && <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />}
     </div>
   );
 }

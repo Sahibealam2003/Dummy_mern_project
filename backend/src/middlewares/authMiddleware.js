@@ -20,3 +20,11 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ error: "Session expired or invalid token, please login again" });
     }
 };
+
+export const admin = (req, res, next) => {
+    if (req.user && req.user.role === "admin") {
+        next();
+    } else {
+        return res.status(403).json({ error: "Access denied. Admins only" });
+    }
+};

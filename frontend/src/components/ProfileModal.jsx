@@ -14,6 +14,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [role, setRole] = useState("user");
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState("");
     const [loading, setLoading] = useState(false);
@@ -25,6 +26,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
         if (isOpen && user) {
             setName(user.name || "");
             setPhoneNumber(user.phoneNumber || "");
+            setRole(user.role || "user");
             setAvatarFile(null);
             setAvatarPreview(user.avatar || "");
             setIsEditing(false);
@@ -75,6 +77,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
             const formData = new FormData();
             formData.append("name", name);
             formData.append("phoneNumber", phoneNumber);
+            formData.append("role", role);
             if (avatarFile) {
                 formData.append("avatar", avatarFile);
             }
@@ -101,6 +104,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
     const handleCancel = () => {
         setName(user.name || "");
         setPhoneNumber(user.phoneNumber || "");
+        setRole(user.role || "user");
         setAvatarFile(null);
         setAvatarPreview(user.avatar || "");
         setIsEditing(false);
@@ -260,6 +264,34 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                                 </div>
                             ) : (
                                 <span className={INFO_VAL_CLS}>{user.name}</span>
+                            )}
+                        </div>
+
+                        {/* Role Row */}
+                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1.5 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
+                            <span className={INFO_LABEL_CLS}>Account Role</span>
+                            {isEditing ? (
+                                <div className="flex items-center gap-2 mt-1">
+                                    <svg className="h-4 w-4 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <select
+                                        value={role}
+                                        onChange={(e) => setRole(e.target.value)}
+                                        disabled={loading}
+                                        className="w-full bg-transparent text-sm font-semibold text-[#2c2420] outline-none border-none py-1 cursor-pointer"
+                                    >
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 mt-0.5">
+                                    <span className={`h-2.5 w-2.5 rounded-full ${user.role === "admin" ? "bg-amber-500" : "bg-blue-500"}`} />
+                                    <span className="text-sm font-bold uppercase tracking-wider" style={{ color: user.role === "admin" ? "#d97706" : "#2563eb" }}>
+                                        {user.role === "admin" ? "Admin" : "Standard User"}
+                                    </span>
+                                </span>
                             )}
                         </div>
 

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getAllSpecialOffers } from "../services/api";
 
 const COUPONS = [
     {
@@ -93,7 +94,17 @@ const CouponCard = ({ coupon }) => {
                     >
                         {coupon.tag}
                     </span>
-                    <span className="leading-none" style={{ color: coupon.color }}>{coupon.icon}</span>
+                    <span className="leading-none flex items-center justify-center h-5 w-5" style={{ color: coupon.color }}>
+                        {typeof coupon.icon === "string" && coupon.icon.trim().startsWith("<svg") ? (
+                            <span className="h-5 w-5 inline-block" dangerouslySetInnerHTML={{ __html: coupon.icon }} />
+                        ) : (
+                            coupon.icon || (
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                                </svg>
+                            )
+                        )}
+                    </span>
                 </div>
 
                 <h3 className="text-lg font-black tracking-tight text-[#2c2420]" style={{ color: coupon.color }}>
@@ -141,6 +152,24 @@ const CouponCard = ({ coupon }) => {
 };
 
 const SpecialOffers = () => {
+    const [offers, setOffers] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchOffers = async () => {
+            try {
+                const data = await getAllSpecialOffers();
+                setOffers(data);
+            } catch (err) {
+                console.error("Failed to load special offers:", err);
+                setOffers(COUPONS);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOffers();
+    }, []);
+
     return (
         <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
             <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
@@ -158,11 +187,23 @@ const SpecialOffers = () => {
                 <div className="mb-8 h-px" style={{ background: "#ede8e2" }} />
 
                 {/* Coupon Grid */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 stagger animate-fade-in">
-                    {COUPONS.map((coupon) => (
-                        <CouponCard key={coupon.code} coupon={coupon} />
-                    ))}
-                </div>
+                {loading ? (
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="skeleton h-48 w-full rounded-2xl border border-[#ede8e2]" />
+                        ))}
+                    </div>
+                ) : offers.length === 0 ? (
+                    <div className="text-center py-16 bg-white rounded-2xl border border-[#ede8e2] shadow-sm">
+                        <p className="text-sm font-semibold text-[#8c7e74]">No active special offers available.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 stagger animate-fade-in">
+                        {offers.map((coupon) => (
+                            <CouponCard key={coupon.code} coupon={coupon} />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

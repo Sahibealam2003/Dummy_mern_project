@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { getMyOrders } from "../services/api";
+import { generateInvoice } from "../utils/generateInvoice";
 
 const OrderHistory = () => {
     const { isLoggedIn } = useSelector((state) => state.auth);
     const [orders, setOrders] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -40,6 +43,8 @@ const OrderHistory = () => {
                 return "bg-purple-50 text-purple-700 border-purple-200/60";
             case "Delivered":
                 return "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+            case "Cancelled":
+                return "bg-rose-50 text-rose-700 border-rose-200/60";
             default:
                 return "bg-gray-50 text-gray-700 border-gray-200/60";
         }
@@ -75,13 +80,58 @@ const OrderHistory = () => {
         );
     }
 
+    const uniqueCategories = ["All", ...new Set(orders.flatMap(order => 
+        order.orderItems.map(item => item.product?.category).filter(Boolean)
+    ))];
+
+    const filteredOrders = orders.filter((order) => {
+        const query = searchQuery.toLowerCase();
+        const matchId = order.orderNumber?.toLowerCase().includes(query);
+        const matchCategory = selectedCategory === "All" || order.orderItems?.some(item => 
+            item.product?.category === selectedCategory
+        );
+        return matchId && matchCategory;
+    });
+
     return (
         <div style={{ background: "#f5f3ef", minHeight: "100vh" }} className="pb-16 pt-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-black text-[#2c2420] tracking-tight">My Orders</h1>
-                    <p className="text-sm text-[#8c7e74] mt-1">Track and manage your order history.</p>
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-black text-[#2c2420] tracking-tight">My Orders</h1>
+                        <p className="text-sm text-[#8c7e74] mt-1">Track and manage your order history.</p>
+                    </div>
+                    {orders.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+                            <div className="relative w-full sm:w-64">
+                                <input
+                                    type="text"
+                                    placeholder="Search by Order ID..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full rounded-xl border border-[#ede8e2] bg-white pl-10 pr-4 py-2 text-sm text-[#2c2420] placeholder-[#a69c93] shadow-sm outline-none focus:border-[#e8622a] focus:ring-2 focus:ring-[#e8622a]/20 transition-all"
+                                />
+                                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#a69c93]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <div className="relative w-full sm:w-48">
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    className="w-full appearance-none rounded-xl border border-[#ede8e2] bg-white pl-4 pr-10 py-2 text-sm text-[#2c2420] shadow-sm outline-none focus:border-[#e8622a] focus:ring-2 focus:ring-[#e8622a]/20 transition-all cursor-pointer"
+                                >
+                                    {uniqueCategories.map(cat => (
+                                        <option key={cat} value={cat}>{cat === "All" ? "All Categories" : cat}</option>
+                                    ))}
+                                </select>
+                                <svg className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#a69c93] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {orders.length === 0 ? (
@@ -102,9 +152,21 @@ const OrderHistory = () => {
                             Browse Catalog
                         </Link>
                     </div>
+                ) : filteredOrders.length === 0 ? (
+                    <div className="rounded-3xl border border-[#ede8e2] bg-white p-12 text-center shadow-sm">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-stone-50 text-[#8c7e74] mb-6">
+                            <svg className="h-8 w-8 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-lg font-bold text-[#2c2420]">No matching orders</h2>
+                        <p className="mt-1.5 text-xs text-[#8c7e74] max-w-xs mx-auto">
+                            Try adjusting your search query.
+                        </p>
+                    </div>
                 ) : (
                     <div className="space-y-6">
-                        {orders.map((order) => (
+                        {filteredOrders.map((order) => (
                             <div
                                 key={order._id}
                                 className="overflow-hidden rounded-3xl border border-[#ede8e2] bg-white shadow-sm hover:shadow-md transition-all duration-300 animate-fade-in-up"
@@ -134,6 +196,20 @@ const OrderHistory = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => generateInvoice(order)}
+                                            disabled={order.orderStatus !== "Delivered" && order.orderStatus !== "Cancelled"}
+                                            className={`flex h-8 w-8 items-center justify-center rounded-lg border bg-white shrink-0 transition-all ${
+                                                order.orderStatus === "Delivered" || order.orderStatus === "Cancelled"
+                                                    ? "border-[#ede8e2] text-[#8c7e74] hover:border-[#e8622a] hover:text-[#e8622a] hover:bg-[#fff3ed] active:scale-95 cursor-pointer"
+                                                    : "border-[#ede8e2] text-[#d1ccc7] opacity-50 cursor-not-allowed"
+                                            }`}
+                                            title={order.orderStatus === "Delivered" || order.orderStatus === "Cancelled" ? "Download Invoice PDF" : "Invoice available upon delivery or cancellation"}
+                                        >
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                        </button>
                                         <div className="text-right shrink-0">
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c7e74] block mb-0.5">Total Paid</span>
                                             <span className="font-extrabold text-[#e8622a] text-sm">${order.totalPrice.toFixed(2)}</span>

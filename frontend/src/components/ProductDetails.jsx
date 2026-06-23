@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getSingleProduct, deleteProductApi } from "../services/api";
+import { addToCart, incrementQuantity, decrementQuantity } from "../reducers/cartSlice";
 
 const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) => {
     const [product, setProduct] = useState(null);
@@ -13,9 +14,21 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [deleteError, setDeleteError] = useState("");
 
+    // Remove Last Item Confirmation Modal State
+    const [removeLastModalOpen, setRemoveLastModalOpen] = useState(false);
+
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const { isLoggedIn, user } = useSelector((state) => state.auth);
     const isAdmin = isLoggedIn && user?.role === "admin";
+
+    const cartItem = useSelector((state) =>
+        state.cart.products.find((p) => {
+            const prodId = product?.id || product?._id;
+            return (p.id || p._id)?.toString() === prodId?.toString();
+        })
+    );
+    const quantityInCart = cartItem ? cartItem.quantity : 0;
 
     useEffect(() => {
         const handleKeyDown = (e) => { if (e.key === "Escape") onClose(); };
@@ -28,6 +41,14 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
         document.body.style.overflow = "hidden";
         return () => { document.body.style.overflow = ""; };
     }, []);
+
+    const handleDecrementClick = () => {
+        if (quantityInCart === 1) {
+            setRemoveLastModalOpen(true);
+        } else {
+            dispatch(decrementQuantity(product?.id || product?._id));
+        }
+    };
 
     const handleDeleteClick = () => {
         setDeleteError("");
@@ -92,43 +113,54 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
     };
 
     return (
-        <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[#2c2420]/45">
+        <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[#2c2420]/50">
             <div className="absolute inset-0 cursor-pointer" onClick={onClose} />
 
-            <div className="animate-scale-in glass relative w-full max-w-3xl overflow-hidden rounded p-6 shadow-2xl shadow-black/10 md:p-8 animate-border-glow">
+            <div 
+                className="animate-scale-in relative w-full max-w-3xl overflow-hidden rounded-xl p-6 md:p-8 border border-white/70"
+                style={{
+                    background: "linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(253, 251, 249, 0.98) 100%)",
+                    boxShadow: "0 30px 60px -15px rgba(44, 36, 32, 0.22)"
+                }}
+            >
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[#ede8e2] bg-white text-[#8c7e74] hover:bg-[#fdf9f5] hover:text-[#2c2420] transition-all duration-200 hover:rotate-90"
+                    className="absolute top-5 right-5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-[#ede8e2] bg-white text-[#8c7e74] hover:bg-[#fff3ed] hover:text-[#e8622a] hover:border-[#e8622a]/30 transition-all duration-200 hover:rotate-90 shadow-sm z-10"
                     aria-label="Close modal"
                 >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
 
                 {loading ? (
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 mt-4">
-                        <div className="skeleton h-72 w-full rounded-2xl" />
-                        <div className="flex flex-col gap-4">
-                            <div className="skeleton h-3 w-1/4 rounded" />
-                            <div className="skeleton h-7 w-3/4 rounded" />
-                            <div className="skeleton h-4 w-full rounded" />
-                            <div className="skeleton h-4 w-5/6 rounded" />
-                            <div className="skeleton h-4 w-2/3 rounded" />
-                            <div className="mt-auto skeleton h-10 w-1/3 rounded-xl" />
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-12 mt-4">
+                        <div className="md:col-span-5 skeleton h-72 w-full rounded-lg" />
+                        <div className="md:col-span-7 flex flex-col gap-4">
+                            <div className="skeleton h-3.5 w-1/4 rounded-md" />
+                            <div className="skeleton h-8 w-3/4 rounded-lg" />
+                            <div className="skeleton h-4 w-1/3 rounded-md" />
+                            <div className="skeleton h-24 w-full rounded-lg" />
+                            <div className="mt-auto skeleton h-12 w-full rounded-lg" />
                         </div>
                     </div>
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="mb-4"><svg className="h-12 w-12 text-[#c44e1e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
-                        <p className="text-[#2c2420] font-medium">{error}</p>
-                        <button onClick={onClose} className="mt-6 rounded-xl border border-[#ede8e2] bg-white px-5 py-2 text-sm font-semibold text-[#2c2420] hover:bg-[#fdf9f5] transition-colors">Close</button>
+                        <div className="mb-4">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 border border-rose-100 text-[#c44e1e]">
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p className="text-[#2c2420] font-bold text-sm">{error}</p>
+                        <button onClick={onClose} className="mt-6 rounded-lg border border-[#ede8e2] bg-white px-6 py-2.5 text-xs font-bold text-[#2c2420] hover:bg-[#fdf9f5] transition-colors shadow-sm active:scale-95">Close</button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 mt-2">
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-12 mt-2">
                         {/* Image panel */}
-                        <div className="flex h-64 items-center justify-center overflow-hidden rounded-2xl bg-white border border-[#ede8e2] p-6 md:h-80">
+                        <div className="md:col-span-5 flex h-64 md:h-[350px] items-center justify-center overflow-hidden rounded-lg bg-white border border-[#ede8e2]/60 p-6 shadow-sm hover:shadow-md transition-all duration-300">
                             <img
                                 src={product.image}
                                 alt={product.title}
@@ -137,73 +169,114 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
                         </div>
 
                         {/* Info panel */}
-                        <div className="flex flex-col justify-between">
+                        <div className="md:col-span-7 flex flex-col justify-between">
                             <div>
-                                <span className="inline-block rounded-full bg-[#fff3ed] border border-[#e8622a]/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#e8622a]">
+                                <span className="inline-block rounded-md bg-[#fff3ed] border border-[#e8622a]/15 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-[#e8622a]">
                                     {product.category}
                                 </span>
 
-                                <h2 className="mt-3 text-xl font-bold leading-snug text-[#2c2420] md:text-2xl">
+                                <h2 className="mt-4 text-xl font-extrabold leading-tight tracking-tight text-[#2c2420] md:text-2xl">
                                     {product.title}
                                 </h2>
 
                                 {product.rating && (
-                                    <div className="mt-3 flex items-center gap-2">
-                                        <div className="flex">{renderStars(product.rating.rate)}</div>
-                                        <span className="text-xs font-semibold text-[#2c2420]">{product.rating.rate}</span>
-                                        <span className="text-xs text-[#8c7e74]">({product.rating.count} reviews)</span>
+                                    <div className="mt-3.5 flex items-center gap-2">
+                                        <div className="flex gap-0.5">{renderStars(product.rating.rate)}</div>
+                                        <span className="text-xs font-black text-[#2c2420] ml-1">{product.rating.rate}</span>
+                                        <span className="text-[11px] text-[#8c7e74] font-semibold">({product.rating.count} reviews)</span>
                                     </div>
                                 )}
 
-                                <p className="mt-4 text-sm leading-relaxed text-[#8c7e74] line-clamp-5">
+                                <p className="mt-4 text-xs md:text-sm leading-relaxed text-[#5a4e46] font-medium line-clamp-6">
                                     {product.description}
                                 </p>
                             </div>
 
-                            <div className="mt-6 border-t border-[#ede8e2] pt-5 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-[#8c7e74]">Price</span>
-                                    <span className="text-2xl font-extrabold text-[#2c7a4a]">
-                                        ${product.price?.toFixed(2)}
-                                    </span>
-                                </div>
-                                <div className="flex gap-3 justify-end">
-                                    {isAdmin && product && (
-                                        <>
-                                            <button
-                                                onClick={handleDeleteClick}
-                                                className="btn-glow cursor-pointer rounded-xl bg-rose-600 text-white h-10 px-4 shadow-md shadow-rose-600/25 hover:shadow-rose-600/40 hover:bg-rose-750 transition-all duration-200 flex items-center justify-center gap-1.5 font-bold text-xs border border-rose-500 hover:scale-[1.02] active:scale-[0.98]"
-                                                title="Delete Product"
-                                            >
-                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                                Delete
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    onClose();
-                                                    navigate("/admin");
-                                                }}
-                                                className="btn-glow cursor-pointer rounded-xl bg-amber-500 text-white h-10 px-4 shadow-md shadow-amber-500/25 hover:shadow-amber-500/40 hover:bg-amber-600 transition-all duration-200 flex items-center justify-center gap-1.5 font-bold text-xs border border-amber-400 hover:scale-[1.02] active:scale-[0.98]"
-                                                title="Edit Product"
-                                            >
-                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                                </svg>
-                                                Edit
-                                            </button>
-                                        </>
-                                    )}
-                                    <button
-                                        onClick={onClose}
-                                        className="btn-glow cursor-pointer rounded-xl border border-[#ede8e2] bg-white h-10 w-10 text-[#2c2420] hover:bg-[#fdf9f5] transition-all duration-200 flex items-center justify-center"
-                                        aria-label="Close details"
-                                    >
-                                        <svg className="h-5 w-5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                                            <path d="M704 288h-281.6l177.6-202.88a32 32 0 0 0-48.32-42.24l-224 256a30.08 30.08 0 0 0-2.24 3.84 32 32 0 0 0-2.88 4.16v1.92a32 32 0 0 0 0 5.12A32 32 0 0 0 320 320a32 32 0 0 0 0 4.8 32 32 0 0 0 0 5.12v1.92a32 32 0 0 0 2.88 4.16 30.08 30.08 0 0 0 2.24 3.84l224 256a32 32 0 1 0 48.32-42.24L422.4 352H704a224 224 0 0 1 224 224v128a224 224 0 0 1-224 224H320a232 232 0 0 1-28.16-1.6 32 32 0 0 0-35.84 27.84 32 32 0 0 0 2.56 12.16c-35.84-2.56-35.84-2.56-35.84-2.56-1.6-1.6-28.16-1.6-28.16-1.6a295.04 295.04 0 0 0 0 590.08h384a288 288 0 0 0 288-288v-128a288 288 0 0 0-288-288z" />
-                                        </svg>
-                                    </button>
+                            <div className="mt-6 border-t border-[#ede8e2] pt-5">
+                                <div className="grid grid-cols-3 items-center w-full">
+                                    {/* Left: Total Price */}
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-[#8c7e74]">Total Price</span>
+                                        <span className="text-2xl font-black text-[#e8622a] mt-0.5">
+                                            ${product.price?.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Center: Add to Cart / Qty selector */}
+                                    <div className="flex justify-center">
+                                        {isAdmin && product && (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={handleDeleteClick}
+                                                    className="btn-glow cursor-pointer rounded-lg bg-rose-600 text-white h-11 px-4 shadow-md shadow-rose-600/25 hover:shadow-rose-600/40 hover:bg-rose-700 transition-all duration-200 flex items-center justify-center gap-1.5 font-bold text-xs border border-rose-500 hover:scale-[1.02] active:scale-[0.98]"
+                                                    title="Delete Product"
+                                                >
+                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                    Delete
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        onClose();
+                                                        navigate("/admin");
+                                                    }}
+                                                    className="btn-glow cursor-pointer rounded-lg bg-amber-500 text-white h-11 px-4 shadow-md shadow-amber-500/25 hover:shadow-amber-500/40 hover:bg-amber-600 transition-all duration-200 flex items-center justify-center gap-1.5 font-bold text-xs border border-amber-400 hover:scale-[1.02] active:scale-[0.98]"
+                                                    title="Edit Product"
+                                                >
+                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                    </svg>
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        )}
+                                        {!isAdmin && product && (
+                                            quantityInCart === 0 ? (
+                                                <button
+                                                    id={`add-to-cart-details-${product.id || product._id}`}
+                                                    onClick={() => dispatch(addToCart(product))}
+                                                    className="btn-glow cursor-pointer rounded-lg bg-gradient-to-r from-[#e8622a] to-[#c44e1e] text-white h-11 px-6 font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#e8622a]/20 hover:opacity-95 hover:scale-[1.02] active:scale-[0.98] transition-all tracking-wider uppercase whitespace-nowrap"
+                                                >
+                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                    </svg>
+                                                    Add to Cart
+                                                </button>
+                                            ) : (
+                                                <div className="flex items-center gap-3 rounded-lg border border-[#ede8e2] px-3 py-1 bg-[#fffdfb] shadow-inner h-11">
+                                                    <button
+                                                        onClick={handleDecrementClick}
+                                                        className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-black transition-all active:scale-90 cursor-pointer hover:bg-[#fff3ed] hover:text-[#e8622a] border border-[#ede8e2] bg-white text-[#2c2420] select-none"
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <span className="text-xs font-black text-[#2c2420] min-w-[20px] text-center">{quantityInCart}</span>
+                                                    <button
+                                                        onClick={() => dispatch(incrementQuantity(product.id || product._id))}
+                                                        className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-black transition-all active:scale-90 cursor-pointer hover:bg-[#fff3ed] hover:text-[#e8622a] border border-[#ede8e2] bg-white text-[#2c2420] select-none"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+                                    
+                                    {/* Right: Return / Close button */}
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={onClose}
+                                            className="cursor-pointer rounded-lg text-[#8c7e74] hover:text-[#2c2420] hover:bg-[#ede8e2]/40 h-11 w-11 transition-all duration-200 flex items-center justify-center"
+                                            aria-label="Close details"
+                                            title="Back to Catalog"
+                                        >
+                                            <svg className="h-5.5 w-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M9 14L4 9l5-5" />
+                                                <path d="M4 9h12.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -215,17 +288,17 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
                     <div className="fixed inset-0 z-60 flex items-center justify-center p-4 backdrop-blur-md bg-[#2c2420]/45 animate-fade-in">
                         <div className="absolute inset-0 cursor-pointer" onClick={() => !deleteLoading && setDeleteModalOpen(false)} />
 
-                        <div className="glass relative w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl animate-scale-in text-center">
+                        <div className="glass relative w-full max-w-md rounded-xl p-6 md:p-8 shadow-2xl animate-scale-in text-center">
                             <button
                                 onClick={() => setDeleteModalOpen(false)}
                                 disabled={deleteLoading}
-                                className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#ede8e2] bg-white text-[#8c7e74] hover:rotate-90 hover:text-[#2c2420] transition-all cursor-pointer"
+                                className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-lg border border-[#ede8e2] bg-white text-[#8c7e74] hover:rotate-90 hover:text-[#2c2420] transition-all cursor-pointer"
                             >
                                 ✕
                             </button>
 
                             {/* Danger Icon */}
-                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 border border-rose-100 text-rose-600">
+                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-rose-50 border border-rose-100 text-rose-600">
                                 <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
@@ -240,8 +313,8 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
 
                             {/* Preview Section */}
                             {product && (
-                                <div className="mb-6 rounded-xl border border-[#ede8e2] bg-[#fafafa]/50 p-4 text-left flex items-center gap-3">
-                                    <div className="h-12 w-12 shrink-0 rounded-lg bg-white border border-[#ede8e2] flex items-center justify-center p-1 overflow-hidden">
+                                <div className="mb-6 rounded-lg border border-[#ede8e2] bg-[#fafafa]/50 p-4 text-left flex items-center gap-3">
+                                    <div className="h-12 w-12 shrink-0 rounded bg-white border border-[#ede8e2] flex items-center justify-center p-1 overflow-hidden">
                                         <img
                                             src={product.image}
                                             alt={product.title}
@@ -260,7 +333,7 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
                             )}
 
                             {deleteError && (
-                                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600 animate-shake text-left">
+                                <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600 animate-shake text-left">
                                     {deleteError}
                                 </div>
                             )}
@@ -270,7 +343,7 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
                                     type="button"
                                     onClick={confirmDelete}
                                     disabled={deleteLoading}
-                                    className="w-full rounded-xl bg-rose-600 text-white hover:bg-rose-700 px-6 py-2.5 text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                    className="w-full rounded-lg bg-rose-600 text-white hover:bg-rose-700 px-6 py-2.5 text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                                 >
                                     {deleteLoading && (
                                         <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
@@ -279,6 +352,56 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
                                         </svg>
                                     )}
                                     {deleteLoading ? "Deleting..." : "Yes, Delete"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal: Confirm Remove Last Item */}
+                {removeLastModalOpen && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#2c2420]/15 backdrop-blur-[2px] rounded-xl p-6">
+                        <div className="absolute inset-0 cursor-pointer" onClick={() => setRemoveLastModalOpen(false)} />
+
+                        <div className="relative w-full max-w-sm rounded-xl border border-[#ede8e2] bg-white/98 p-6 shadow-2xl animate-scale-in text-center">
+                            <button
+                                onClick={() => setRemoveLastModalOpen(false)}
+                                className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg border border-[#ede8e2] bg-white text-[#8c7e74] hover:bg-[#fdf9f5] hover:text-[#2c2420] hover:rotate-90 transition-all cursor-pointer"
+                            >
+                                ✕
+                            </button>
+
+                            {/* Warning Trash Icon in ShopX Theme */}
+                            <div className="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-lg bg-[#fff3ed] border border-[#e8622a]/15 text-[#e8622a]">
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+
+                            <h3 className="text-base font-extrabold text-[#2c2420]">
+                                Remove Item?
+                            </h3>
+                            <p className="text-xs text-[#8c7e74] mt-2 mb-5 font-medium leading-relaxed max-w-[260px] mx-auto">
+                                This is the last item of this product in your cart. Removing it will clear the product from your cart.
+                            </p>
+
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setRemoveLastModalOpen(false)}
+                                    className="flex-1 rounded-lg border border-[#ede8e2] bg-[#fdfdfb] px-4 py-2.5 text-xs font-bold text-[#5a4e46] hover:bg-[#f5f3ef] transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        dispatch(decrementQuantity(product?.id || product?._id));
+                                        setRemoveLastModalOpen(false);
+                                    }}
+                                    className="flex-1 rounded-lg bg-[#e8622a] text-white hover:bg-[#c44e1e] px-4 py-2.5 text-xs font-extrabold shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                                >
+                                    Yes, Remove
                                 </button>
                             </div>
                         </div>

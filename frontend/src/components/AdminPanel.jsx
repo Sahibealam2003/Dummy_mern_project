@@ -9,7 +9,9 @@ import {
     getAllSpecialOffers,
     createSpecialOfferApi,
     updateSpecialOfferApi,
-    deleteSpecialOfferApi
+    deleteSpecialOfferApi,
+    getAllOrders,
+    updateOrderStatus
 } from "../services/api";
 import { AppShell } from "./app-shell";
 import { Dashboard } from "./dashboard";
@@ -50,6 +52,10 @@ const AdminPanel = () => {
     const [offerColor, setOfferColor] = useState("#e8622a");
     const [offerBg, setOfferBg] = useState("#fff3ed");
     
+    // Orders State
+    const [orders, setOrders] = useState([]);
+    const [ordersLoading, setOrdersLoading] = useState(true);
+    
     // Global form feedback states
     const [formLoading, setFormLoading] = useState(false);
     const [error, setError] = useState("");
@@ -75,6 +81,8 @@ const AdminPanel = () => {
             setActiveTab("products");
         } else if (tab === "offers") {
             setActiveTab("offers");
+        } else if (tab === "orders") {
+            setActiveTab("orders");
         } else {
             setActiveTab("dashboard");
         }
@@ -106,10 +114,23 @@ const AdminPanel = () => {
         }
     };
 
+    const fetchOrders = async () => {
+        try {
+            setOrdersLoading(true);
+            const data = await getAllOrders();
+            setOrders(data);
+        } catch (err) {
+            console.error("Failed to load orders:", err);
+        } finally {
+            setOrdersLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (isLoggedIn && user?.role === "admin") {
             fetchProducts();
             fetchOffers();
+            fetchOrders();
         }
     }, [isLoggedIn, user]);
 
@@ -327,12 +348,14 @@ const AdminPanel = () => {
                             Admin Controller
                         </span>
                         <h2 className="text-2xl font-black tracking-tight text-[#2c2420]">
-                            {activeTab === "products" ? "Products Inventory" : "Special Offers & Coupons"}
+                            {activeTab === "products" ? "Products Inventory" : activeTab === "offers" ? "Special Offers & Coupons" : "Orders Tracking"}
                         </h2>
                         <p className="text-xs text-[#8c7e74] mt-1 font-medium">
                             {activeTab === "products" 
                                 ? "Manage your inventory catalog, update prices, and stock details." 
-                                : "Configure promo discount codes, custom tags, and coupon expiry."}
+                                : activeTab === "offers"
+                                ? "Configure promo discount codes, custom tags, and coupon expiry."
+                                : "Monitor client orders, process delivery updates, and update statuses."}
                         </p>
                     </div>
 
@@ -535,6 +558,120 @@ const AdminPanel = () => {
                                                             </svg>
                                                         </button>
                                                     </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* TAB CONTENT: ORDERS */}
+            {activeTab === "orders" && (
+                <>
+                    {ordersLoading ? (
+                        <div className="flex flex-col gap-3">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="bg-white rounded-xl h-16 animate-pulse border border-[#ede8e2]" />
+                            ))}
+                        </div>
+                    ) : orders.length === 0 ? (
+                        <div className="text-center py-20 bg-white rounded-2xl border border-[#ede8e2] shadow-sm">
+                            <p className="text-sm font-semibold text-[#5a4e46]">No orders found</p>
+                            <button onClick={fetchOrders} className="text-xs text-[#e8622a] font-bold hover:underline mt-2">
+                                Reload Orders
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="overflow-hidden rounded-2xl border border-[#ede8e2] bg-white shadow-sm animate-fade-in">
+                            {success && (
+                                <div className="p-4 bg-emerald-50 text-emerald-700 border-b border-emerald-100 text-xs font-bold transition-all duration-300">
+                                    ✓ {success}
+                                </div>
+                            )}
+                            {error && (
+                                <div className="p-4 bg-rose-50 text-rose-600 border-b border-rose-100 text-xs font-bold transition-all duration-300">
+                                    ✗ {error}
+                                </div>
+                            )}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-[#f5f3ef] text-[10px] font-black uppercase tracking-wider text-[#8c7e74] bg-[#fafafa]">
+                                            <th className="p-4">Order ID</th>
+                                            <th className="p-4">Customer</th>
+                                            <th className="p-4">Items Ordered</th>
+                                            <th className="p-4">Order Date</th>
+                                            <th className="p-4 text-right">Total Price</th>
+                                            <th className="p-4 text-center w-48">Status Update</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#f5f3ef]">
+                                        {orders.map((order) => (
+                                            <tr key={order._id} className="hover:bg-stone-50/50 transition-colors group">
+                                                <td className="p-4 font-mono font-extrabold text-xs text-[#2c2420]">
+                                                    {order.orderNumber}
+                                                </td>
+                                                <td className="p-4">
+                                                    <p className="text-xs font-bold text-[#2c2420]">{order.user?.name || "Guest"}</p>
+                                                    <p className="text-[10px] text-[#8c7e74] font-medium">{order.user?.email || "N/A"}</p>
+                                                </td>
+                                                <td className="p-4 max-w-xs">
+                                                    <div className="text-xs text-[#5a4e46] font-medium space-y-0.5">
+                                                        {order.orderItems.map((item, idx) => (
+                                                            <div key={idx} className="truncate" title={`${item.title} (x${item.quantity})`}>
+                                                                • {item.title} <span className="text-[#8c7e74] font-bold">(x{item.quantity})</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-xs font-semibold text-[#8c7e74]">
+                                                    {new Date(order.createdAt).toLocaleDateString("en-US", {
+                                                        year: "numeric",
+                                                        month: "short",
+                                                        day: "numeric"
+                                                    })}
+                                                </td>
+                                                <td className="p-4 text-right font-black text-[#e8622a] text-xs">
+                                                    ${order.totalPrice?.toFixed(2)}
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <select
+                                                        value={order.orderStatus}
+                                                        onChange={async (e) => {
+                                                            const newStatus = e.target.value;
+                                                            try {
+                                                                setError("");
+                                                                setSuccess("");
+                                                                await updateOrderStatus(order._id, newStatus);
+                                                                setOrders(orders.map((o) => o._id === order._id ? { ...o, orderStatus: newStatus } : o));
+                                                                setSuccess(`Order ${order.orderNumber} status updated to ${newStatus}`);
+                                                            } catch (err) {
+                                                                console.error("Failed to update status:", err);
+                                                                setError(err.response?.data?.error || "Failed to update order status");
+                                                            }
+                                                        }}
+                                                        className={`rounded-lg border px-3 py-1.5 text-xs font-extrabold cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#e8622a]/30 transition-all ${
+                                                            order.orderStatus === "Pending"
+                                                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                                : order.orderStatus === "Processing"
+                                                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                                : order.orderStatus === "Shipped"
+                                                                ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                                : order.orderStatus === "Cancelled"
+                                                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                        }`}
+                                                    >
+                                                        <option value="Pending">Pending</option>
+                                                        <option value="Processing">Processing</option>
+                                                        <option value="Shipped">Shipped</option>
+                                                        <option value="Delivered">Delivered</option>
+                                                        <option value="Cancelled">Cancelled</option>
+                                                    </select>
                                                 </td>
                                             </tr>
                                         ))}

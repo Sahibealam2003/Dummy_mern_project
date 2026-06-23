@@ -110,7 +110,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                 >
                     {/* Category badge */}
                     <span
-                        className="absolute left-3 top-3 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide z-10"
+                        className="absolute left-3 top-3 rounded-md px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide z-10"
                         style={{ background: "#f0ece6", color: "#8c7e74" }}
                     >
                         {product.category}
@@ -119,7 +119,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                     {/* Cart qty badge */}
                     {quantityInCart > 0 && (
                         <span
-                            className="absolute right-3 top-3 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[9px] font-bold text-white z-10 shadow-sm"
+                            className="absolute right-3 top-3 flex h-5 min-w-5 items-center justify-center rounded-md px-1.5 text-[9px] font-bold text-white z-10 shadow-sm"
                             style={{ background: "#e8622a" }}
                         >
                             {quantityInCart}
@@ -130,7 +130,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                     {isLoggedIn && !isAdmin && (
                         <button
                             onClick={handleWishlistToggle}
-                            className={`absolute right-3 ${quantityInCart > 0 ? "top-10" : "top-3"} z-30 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm border border-[#ede8e2] shadow-sm hover:scale-110 hover:bg-white active:scale-90 transition-all cursor-pointer`}
+                            className={`absolute right-3 ${quantityInCart > 0 ? "top-10" : "top-3"} z-30 flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 backdrop-blur-sm border border-[#ede8e2] shadow-sm hover:scale-110 hover:bg-white active:scale-90 transition-all cursor-pointer`}
                             title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
                         >
                             <svg
@@ -157,7 +157,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                         <button
                             id={`view-product-${product.id}`}
                             onClick={() => onClick(product.id)}
-                            className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md border border-[#ede8e2] text-[#8c7e74] hover:text-[#e8622a] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-md border border-[#ede8e2] text-[#8c7e74] hover:text-[#e8622a] hover:scale-110 active:scale-95 transition-all cursor-pointer"
                             title="View Details"
                         >
                             <svg fill="currentColor" className="h-4 w-4" viewBox="0 0 24 24">
@@ -176,7 +176,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                             <>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); navigate("/admin"); }}
-                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg shadow-amber-500/25 border border-amber-400 hover:bg-amber-600 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white shadow-lg shadow-amber-500/25 border border-amber-400 hover:bg-amber-600 hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                     title="Edit Product"
                                 >
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -185,7 +185,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                 </button>
                                 <button
                                     onClick={handleDelete}
-                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg shadow-rose-600/25 border border-rose-500 hover:bg-rose-700 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-600 text-white shadow-lg shadow-rose-600/25 border border-rose-500 hover:bg-rose-700 hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                     title="Delete Product"
                                 >
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -219,7 +219,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                             </span>
                             {product.rating && (
                                 <span
-                                    className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                    className="flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold"
                                     style={{ background: "#fff8e6", color: "#b45309" }}
                                 >
                                     <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg> {product.rating.rate}
@@ -235,7 +235,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                 <button
                                     id={`add-to-cart-${product.id}`}
                                     onClick={() => dispatch(addToCart(product))}
-                                    className="w-full rounded-xl py-2.5 text-xs font-bold text-white transition-all hover:bg-[#3d3028] active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md"
+                                    className="w-full rounded-lg py-2.5 text-xs font-bold text-white transition-all hover:bg-[#3d3028] active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md"
                                     style={{ background: "#2c2420" }}
                                 >
                                     <svg className="h-4 w-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
@@ -252,7 +252,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                             className="absolute bottom-full left-0 right-0 mb-2.5 animate-scale-in z-20"
                                         >
                                             <div
-                                                className="rounded-xl border p-3 shadow-lg"
+                                                className="rounded-lg border p-3 shadow-lg"
                                                 style={{ background: "#fff8f5", borderColor: "#f9cbb3" }}
                                             >
                                                 <p className="text-xs font-bold mb-1 flex items-center gap-1" style={{ color: "#c44e1e" }}><svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Cart will be empty!</p>
@@ -262,14 +262,14 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => { dispatch(decrementQuantity(product.id)); setShowRemovePopup(false); }}
-                                                        className="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white cursor-pointer"
+                                                        className="flex-1 rounded-md py-1.5 text-[10px] font-bold text-white cursor-pointer"
                                                         style={{ background: "#e8622a" }}
                                                     >
                                                         Remove
                                                     </button>
                                                     <button
                                                         onClick={() => setShowRemovePopup(false)}
-                                                        className="flex-1 rounded-lg border py-1.5 text-[10px] font-bold cursor-pointer"
+                                                        className="flex-1 rounded-md border py-1.5 text-[10px] font-bold cursor-pointer"
                                                         style={{ borderColor: "#d4c9be", color: "#5a4e46" }}
                                                     >
                                                         Keep
@@ -286,12 +286,12 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                     )}
 
                                     <div
-                                        className="flex items-center justify-between rounded-xl border px-3 py-1.5 bg-[#fffdfb] border-[#ede8e2]"
+                                        className="flex items-center justify-between rounded-lg border px-3 py-1.5 bg-[#fffdfb] border-[#ede8e2]"
                                     >
                                         <button
                                             id={`decrement-card-${product.id}`}
                                             onClick={handleDecrement}
-                                            className="flex h-7 w-7 items-center justify-center rounded-lg text-base font-bold transition-all active:scale-90 cursor-pointer hover:bg-rose-50 hover:text-rose-600 border border-[#ede8e2]"
+                                            className="flex h-7 w-7 items-center justify-center rounded-md text-base font-bold transition-all active:scale-90 cursor-pointer hover:bg-rose-50 hover:text-rose-600 border border-[#ede8e2]"
                                             style={{
                                                 background: quantityInCart === 1 ? "#ffebe2" : "#ffffff",
                                                 color: quantityInCart === 1 ? "#e8622a" : "#2c2420",
@@ -306,7 +306,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                         <button
                                             id={`increment-card-${product.id}`}
                                             onClick={() => dispatch(incrementQuantity(product.id))}
-                                            className="flex h-7 w-7 items-center justify-center rounded-lg text-base font-bold transition-all active:scale-90 cursor-pointer hover:bg-[#fff3ed] hover:text-[#e8622a] border border-[#ede8e2] bg-white text-[#2c2420]"
+                                            className="flex h-7 w-7 items-center justify-center rounded-md text-base font-bold transition-all active:scale-90 cursor-pointer hover:bg-[#fff3ed] hover:text-[#e8622a] border border-[#ede8e2] bg-white text-[#2c2420]"
                                         >
                                             +
                                         </button>
@@ -328,19 +328,19 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                     }}
                 >
                     <div 
-                        className="glass relative w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl animate-scale-in text-center bg-white"
+                        className="glass relative w-full max-w-md rounded-xl p-6 md:p-8 shadow-2xl animate-scale-in text-center bg-white"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
                             onClick={() => setDeleteModalOpen(false)}
                             disabled={deleteLoading}
-                            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#ede8e2] bg-white text-[#8c7e74] hover:rotate-90 hover:text-[#2c2420] transition-all cursor-pointer"
+                            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-lg border border-[#ede8e2] bg-white text-[#8c7e74] hover:rotate-90 hover:text-[#2c2420] transition-all cursor-pointer"
                         >
                             ✕
                         </button>
 
                         {/* Danger Icon */}
-                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 border border-rose-100 text-rose-600">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-rose-50 border border-rose-100 text-rose-600">
                             <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -354,8 +354,8 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                         </p>
 
                         {/* Preview Section */}
-                        <div className="mb-6 rounded-xl border border-[#ede8e2] bg-[#fafafa]/50 p-4 text-left flex items-center gap-3">
-                            <div className="h-12 w-12 shrink-0 rounded-lg bg-white border border-[#ede8e2] flex items-center justify-center p-1 overflow-hidden">
+                        <div className="mb-6 rounded-lg border border-[#ede8e2] bg-[#fafafa]/50 p-4 text-left flex items-center gap-3">
+                            <div className="h-12 w-12 shrink-0 rounded bg-white border border-[#ede8e2] flex items-center justify-center p-1 overflow-hidden">
                                 <img
                                     src={product.image}
                                     alt={product.title}
@@ -373,7 +373,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                         </div>
 
                         {deleteError && (
-                            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600 text-left">
+                            <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600 text-left">
                                 {deleteError}
                             </div>
                         )}
@@ -383,7 +383,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                 type="button"
                                 onClick={() => setDeleteModalOpen(false)}
                                 disabled={deleteLoading}
-                                className="flex-1 rounded-xl border px-5 py-2.5 text-xs font-bold transition-all border-[#d4c9be] text-[#5a4e46] hover:bg-[#faf9f7] cursor-pointer disabled:opacity-50"
+                                className="flex-1 rounded-lg border px-5 py-2.5 text-xs font-bold transition-all border-[#d4c9be] text-[#5a4e46] hover:bg-[#faf9f7] cursor-pointer disabled:opacity-50"
                             >
                                 Cancel
                             </button>
@@ -391,7 +391,7 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                                 type="button"
                                 onClick={confirmDelete}
                                 disabled={deleteLoading}
-                                className="flex-1 rounded-xl bg-rose-600 text-white hover:bg-rose-700 px-6 py-2.5 text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                className="flex-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 px-6 py-2.5 text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                             >
                                 {deleteLoading && (
                                     <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">

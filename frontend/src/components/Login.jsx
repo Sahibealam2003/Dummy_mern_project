@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { loginSuccess } from "../reducers/authSlice";
+import { mergeCart } from "../reducers/cartSlice";
 import { loginApi } from "../services/authApi";
 
 const Login = () => {
@@ -33,6 +34,7 @@ const Login = () => {
             
             if (data.success) {
                 dispatch(loginSuccess(data.user));
+                dispatch(mergeCart());
                 setSuccessMessage("Logged in successfully! Redirecting...");
                 setTimeout(() => navigate(redirectUrl), 1200);
             } else {

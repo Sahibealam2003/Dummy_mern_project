@@ -245,7 +245,7 @@ const Navbar = ({ onCartOpen }) => {
                             <>
                                 <button
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                                    className={`flex items-center gap-2.5 rounded-full border pl-1.5 pr-3.5 py-1 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm ${
+                                    className={`flex items-center gap-2.5 rounded-lg border pl-1.5 pr-3.5 py-1 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm ${
                                         user?.role === "admin" 
                                             ? "border-amber-300 bg-amber-50/20 hover:bg-amber-100/30" 
                                             : "border-[#ede8e2] hover:border-[#e8622a]/30 hover:bg-[#e8622a]/4 bg-white/40"
@@ -279,7 +279,7 @@ const Navbar = ({ onCartOpen }) => {
                                 {/* Dropdown Menu */}
                                 {dropdownOpen && (
                                     <div
-                                        className="absolute right-0 mt-3 w-56 rounded-2xl border border-[#ede8e2] bg-white/95 backdrop-blur-lg p-2 shadow-2xl animate-scale-in"
+                                        className="absolute right-0 mt-3 w-56 rounded-xl border border-[#ede8e2] bg-white/95 backdrop-blur-lg p-2 shadow-2xl animate-scale-in"
                                         style={{ zIndex: 100 }}
                                     >
                                         <div className="px-3 py-2.5 border-b border-[#f5f3ef] mb-1.5">
@@ -308,7 +308,7 @@ const Navbar = ({ onCartOpen }) => {
                                             <Link
                                                 to="/admin"
                                                 onClick={() => setDropdownOpen(false)}
-                                                className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-extrabold text-amber-800 bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200/60 hover:from-amber-100/70 hover:to-amber-50 transition-all duration-200 cursor-pointer mb-1.5 shadow-sm"
+                                                className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-extrabold text-amber-800 bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200/60 hover:from-amber-100/70 hover:to-amber-50 transition-all duration-200 cursor-pointer mb-1.5 shadow-sm"
                                             >
                                                 <svg className="h-4 w-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -321,7 +321,7 @@ const Navbar = ({ onCartOpen }) => {
                                                 setProfileOpen(true);
                                                 setDropdownOpen(false);
                                             }}
-                                            className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
+                                            className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
                                         >
                                             <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -332,7 +332,7 @@ const Navbar = ({ onCartOpen }) => {
                                             <Link
                                                 to="/orders"
                                                 onClick={() => setDropdownOpen(false)}
-                                                className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
+                                                className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
                                             >
                                                 <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -344,7 +344,7 @@ const Navbar = ({ onCartOpen }) => {
                                             <Link
                                                 to="/wishlist"
                                                 onClick={() => setDropdownOpen(false)}
-                                                className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
+                                                className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
                                             >
                                                 <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -363,7 +363,7 @@ const Navbar = ({ onCartOpen }) => {
                                                 setDropdownOpen(false);
                                                 nav("/");
                                             }}
-                                            className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all duration-150 cursor-pointer mt-1 border-t border-[#f5f3ef] pt-2"
+                                            className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all duration-150 cursor-pointer mt-1 border-t border-[#f5f3ef] pt-2"
                                         >
                                             <svg className="h-4 w-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -377,11 +377,11 @@ const Navbar = ({ onCartOpen }) => {
                             <>
                                 <button
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                                    className="flex items-center gap-2 rounded-full border border-[#ede8e2] px-3.5 py-1.8 text-xs font-bold transition-all duration-200 hover:border-[#e8622a]/40 hover:bg-[#e8622a]/5 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
+                                    className="flex items-center gap-2 rounded-lg border border-[#ede8e2] px-3.5 py-1.8 text-xs font-bold transition-all duration-200 hover:border-[#e8622a]/40 hover:bg-[#e8622a]/5 hover:scale-[1.02] active:scale-[95] cursor-pointer shadow-sm"
                                     style={{ color: "#2c2420" }}
                                 >
                                     <div
-                                        className="flex h-6 w-6 items-center justify-center rounded-full text-[#8c7e74] bg-[#f5f3ef]"
+                                        className="flex h-6 w-6 items-center justify-center rounded-sm text-[#8c7e74] bg-[#f5f3ef]"
                                     >
                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -395,7 +395,7 @@ const Navbar = ({ onCartOpen }) => {
 
                                 {dropdownOpen && (
                                     <div
-                                        className="absolute right-0 mt-3 w-64 rounded-2xl border border-[#ede8e2] bg-white/95 backdrop-blur-lg p-5 shadow-2xl animate-scale-in"
+                                        className="absolute right-0 mt-3 w-64 rounded-xl border border-[#ede8e2] bg-white/95 backdrop-blur-lg p-5 shadow-2xl animate-scale-in"
                                         style={{ zIndex: 100 }}
                                     >
                                         <p className="text-sm font-black text-[#2c2420] mb-1">Welcome to SHOPx</p>
@@ -404,7 +404,7 @@ const Navbar = ({ onCartOpen }) => {
                                         <Link 
                                             to="/login" 
                                             onClick={() => setDropdownOpen(false)}
-                                            className="block text-center rounded-xl bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md shadow-[#e8622a]/15 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                                            className="block text-center rounded-lg bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md shadow-[#e8622a]/15 hover:scale-[1.02] active:scale-[95] transition-all cursor-pointer"
                                         >
                                             Sign In
                                         </Link>

@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { signupSuccess } from "../reducers/authSlice";
+import { mergeCart } from "../reducers/cartSlice";
 import { signupApi, verifyOtpApi } from "../services/authApi";
 
 const Signup = () => {
@@ -113,6 +114,7 @@ const Signup = () => {
             const data = await verifyOtpApi(email, otp);
             if (data.success) {
                 dispatch(signupSuccess(data.user));
+                dispatch(mergeCart());
                 setSuccessMessage("Email verified successfully! Redirecting...");
                 setTimeout(() => navigate(redirectUrl), 1200);
             } else {

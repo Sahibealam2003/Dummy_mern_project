@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { clearCart } from "../reducers/cartSlice";
 import { getAllSpecialOffers, createOrder } from "../services/api";
+import { generateInvoice } from "../utils/generateInvoice";
 
 const FIELD_CLS = "w-full rounded-xl border border-[#e4dfd9] bg-[#fafafa] px-4 py-2 text-sm text-[#2c2420] placeholder-[#a69c93] outline-none focus:bg-[#fafafa] focus:border-[#e8622a] focus:ring-4 focus:ring-[#e8622a]/10 transition-all duration-200";
 const LABEL_CLS = "block text-xs font-semibold uppercase tracking-wider text-[#8c7e74] mb-1.5";
@@ -33,6 +34,10 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     const [promoInput, setPromoInput] = useState("");
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoError, setPromoError] = useState("");
+    const [appliedPromoCode, setAppliedPromoCode] = useState("");
+    const [appliedPromoDiscountText, setAppliedPromoDiscountText] = useState("");
+    const [appliedDiscountPct, setAppliedDiscountPct] = useState(0.0);
+    const [createdOrder, setCreatedOrder] = useState(null);
 
     // Checkout steps: 'form', 'processing', 'success'
     const [step, setStep] = useState("form");
@@ -164,7 +169,9 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                             <div>
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c7e74] block mb-0.5">Estimated Arrival</span>
                                 <p className="font-bold text-emerald-600 text-sm">{getDeliveryEstimate()}</p>
-                                <span className="text-[10px] text-[#8c7e74] block mt-1">Standard Delivery (Free)</span>
+                                <span className="text-[10px] text-[#8c7e74] block mt-1">
+                                    Standard Delivery ({orderSummarySnapshot.shipping === 0 ? "Free" : `$${orderSummarySnapshot.shipping.toFixed(2)}`})
+                                </span>
                             </div>
                         </div>
 
@@ -201,9 +208,20 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={() => generateInvoice(createdOrder)}
+                            disabled={true}
+                            title="Invoice will be available once the order is delivered or cancelled"
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#2c2420] py-3.5 text-sm font-bold text-white shadow-lg hover:bg-[#3d3028] active:scale-[0.99] transition-all cursor-not-allowed opacity-50"
+                        >
+                            <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download Invoice
+                        </button>
                         <Link
                             to="/"
-                            className="btn-glow flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#e8622a]/20 hover:opacity-95 active:scale-[0.99] transition-all"
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#e8622a]/20 hover:opacity-95 active:scale-[0.99] transition-all"
                         >
                             Back to Home
                         </Link>
@@ -212,6 +230,15 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                             className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#ede8e2] bg-white py-3.5 text-sm font-bold text-[#2c2420] hover:bg-[#fdf9f5] active:scale-[0.99] transition-all"
                         >
                             Explore Coupons
+                        </Link>
+                        <Link
+                            to="/orders"
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#ede8e2] bg-white py-3.5 text-sm font-bold text-[#2c2420] hover:bg-[#fdf9f5] active:scale-[0.99] transition-all"
+                        >
+                            <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            My Orders
                         </Link>
                     </div>
                 </div>
@@ -260,34 +287,32 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     }
 
     // Calculations
-    const shipping = 0.0;
+    const isFreeShipPromoActive = promoApplied && appliedPromoCode === "FREESHIP" && totalPrice >= 25;
+    const shipping = (totalPrice >= 49 || isFreeShipPromoActive) ? 0.0 : 5.99;
     const tax = totalPrice * 0.1;
     
-    const getDiscountPercentage = () => {
-        if (!promoApplied) return 0.0;
-        const codeToApply = promoInput.trim().toUpperCase();
-        const matchingOffer = offers.find(o => o.code === codeToApply);
-        if (matchingOffer) {
-            const match = matchingOffer.discount.match(/(\d+)%/);
-            if (match) {
-                return Number(match[1]) / 100;
-            }
-            if (matchingOffer.discount.toUpperCase().includes("FREE SHIPPING")) {
-                return 0.0;
-            }
-        }
-        if (codeToApply === "SHOP10") return 0.1;
-        return 0.0;
-    };
-
-    const promoDiscount = promoApplied ? totalPrice * getDiscountPercentage() : 0.0;
+    const promoDiscount = promoApplied ? totalPrice * appliedDiscountPct : 0.0;
     const finalTotal = totalPrice + tax + shipping - promoDiscount;
 
     const handleApplyPromo = (e) => {
         e.preventDefault();
         const codeToApply = promoInput.trim().toUpperCase();
         const matchingOffer = offers.find(o => o.code === codeToApply);
-        if (matchingOffer || codeToApply === "SHOP10") {
+        if (matchingOffer) {
+            let pct = 0.0;
+            const match = matchingOffer.discount.match(/(\d+)%/);
+            if (match) {
+                pct = Number(match[1]) / 100;
+            }
+            setAppliedPromoCode(matchingOffer.code);
+            setAppliedPromoDiscountText(matchingOffer.discount);
+            setAppliedDiscountPct(pct);
+            setPromoApplied(true);
+            setPromoError("");
+        } else if (codeToApply === "SHOP10") {
+            setAppliedPromoCode("SHOP10");
+            setAppliedPromoDiscountText("10% OFF");
+            setAppliedDiscountPct(0.1);
             setPromoApplied(true);
             setPromoError("");
         } else {
@@ -340,12 +365,14 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                     cardLastFour,
                     paymentMethod: "Card"
                 },
-                totalPrice: finalTotal
+                totalPrice: finalTotal,
+                shippingPrice: shipping
             });
 
             if (res.success) {
                 // Simulate a slight delay to feel natural/processing payment before success screen
                 setTimeout(() => {
+                    setCreatedOrder(res.order);
                     setOrderNumber(res.order.orderNumber);
                     setStep("success");
                     dispatch(clearCart());
@@ -550,7 +577,7 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                 </button>
                             </form>
                             {promoApplied && (
-                                <p className="text-[10px] font-bold text-emerald-600">✓ SHOP10 Code Applied (10% Discount)!</p>
+                                <p className="text-[10px] font-bold text-emerald-600">✓ {appliedPromoCode} Code Applied ({appliedPromoDiscountText} Discount)!</p>
                             )}
                             {promoError && (
                                 <p className="text-[10px] font-bold text-rose-500">{promoError}</p>
@@ -566,7 +593,11 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Shipping</span>
-                                    <span className="font-bold text-[#2c7a4a]">Free</span>
+                                    {shipping === 0 ? (
+                                        <span className="font-bold text-[#2c7a4a]">Free</span>
+                                    ) : (
+                                        <span className="font-semibold text-[#2c2420]">${shipping.toFixed(2)}</span>
+                                    )}
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Tax (10%)</span>
@@ -574,7 +605,7 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                 </div>
                                 {promoApplied && (
                                     <div className="flex justify-between text-emerald-600 font-medium">
-                                        <span>Promo Discount (10%)</span>
+                                        <span>Promo Discount ({appliedPromoDiscountText})</span>
                                         <span>-${promoDiscount.toFixed(2)}</span>
                                     </div>
                                 )}

@@ -77,7 +77,6 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
             const formData = new FormData();
             formData.append("name", name);
             formData.append("phoneNumber", phoneNumber);
-            formData.append("role", role);
             if (avatarFile) {
                 formData.append("avatar", avatarFile);
             }
@@ -245,7 +244,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                 <form id="profile-edit-form" onSubmit={handleSave} className="space-y-3 mb-2">
                     <div className="bg-[#fafafa]/50 border border-[#ede8e2] rounded-xl p-3.5 space-y-3">
                         {/* Name Input / Row */}
-                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
+                        <div className={isEditing ? "flex flex-col border border-[#e8622a]/30 bg-[#fff8f5] rounded-xl p-2.5 focus-within:border-[#e8622a] focus-within:ring-2 focus-within:ring-[#e8622a]/10 transition-all shadow-inner" : INFO_ROW_CLS}>
                             <span className={INFO_LABEL_CLS}>Full Name</span>
                             {isEditing ? (
                                 <div className="flex items-center gap-2 mt-0.5">
@@ -261,38 +260,22 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                                         required
                                         minLength={3}
                                     />
+                                    <span className="text-[9px] bg-[#e8622a]/10 text-[#e8622a] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 select-none animate-pulse">Editable</span>
                                 </div>
                             ) : (
                                 <span className={INFO_VAL_CLS}>{user.name}</span>
                             )}
                         </div>
 
-                        {/* Role Row */}
-                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
+                        {/* Role Row (Always read-only) */}
+                        <div className={INFO_ROW_CLS}>
                             <span className={INFO_LABEL_CLS}>Account Role</span>
-                            {isEditing ? (
-                                <div className="flex items-center gap-2 mt-0.5">
-                                    <svg className="h-4 w-4 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                    </svg>
-                                    <select
-                                        value={role}
-                                        onChange={(e) => setRole(e.target.value)}
-                                        disabled={loading}
-                                        className="w-full bg-transparent text-xs font-semibold text-[#2c2420] outline-none border-none py-0.5 cursor-pointer"
-                                    >
-                                        <option value="user">User</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </div>
-                            ) : (
-                                <span className="inline-flex items-center gap-1.5 mt-0.5">
-                                    <span className={`h-2.5 w-2.5 rounded-full ${user.role === "admin" ? "bg-amber-500" : "bg-blue-500"}`} />
-                                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: user.role === "admin" ? "#d97706" : "#2563eb" }}>
-                                        {user.role === "admin" ? "Admin" : "Standard User"}
-                                    </span>
+                            <span className="inline-flex items-center gap-1.5 mt-0.5">
+                                <span className={`h-2.5 w-2.5 rounded-full ${user.role === "admin" ? "bg-amber-500" : "bg-blue-500"}`} />
+                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: user.role === "admin" ? "#d97706" : "#2563eb" }}>
+                                    {user.role === "admin" ? "Admin" : "Standard User"}
                                 </span>
-                            )}
+                            </span>
                         </div>
 
                         {/* Email Row (Always read-only) */}
@@ -302,7 +285,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                         </div>
 
                         {/* Phone Number Input / Row */}
-                        <div className={isEditing ? "flex flex-col border-b border-[#ede8e2] pb-1 focus-within:border-[#e8622a] transition-all" : INFO_ROW_CLS}>
+                        <div className={isEditing ? "flex flex-col border border-[#e8622a]/30 bg-[#fff8f5] rounded-xl p-2.5 focus-within:border-[#e8622a] focus-within:ring-2 focus-within:ring-[#e8622a]/10 transition-all shadow-inner" : INFO_ROW_CLS}>
                             <span className={INFO_LABEL_CLS}>Phone Number</span>
                             {isEditing ? (
                                 <div className="flex items-center gap-2 mt-0.5">
@@ -317,6 +300,7 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
                                         className="w-full bg-transparent text-xs font-semibold text-[#2c2420] outline-none placeholder-stone-400"
                                         placeholder="Enter phone number"
                                     />
+                                    <span className="text-[9px] bg-[#e8622a]/10 text-[#e8622a] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 select-none animate-pulse">Editable</span>
                                 </div>
                             ) : (
                                 <span className={INFO_VAL_CLS}>{user.phoneNumber || "Not provided"}</span>

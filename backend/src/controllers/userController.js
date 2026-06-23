@@ -381,6 +381,8 @@ export const logout = async (req, res) => {
             }
         }
 
+        // Logout email notification disabled as requested
+        /*
         if (user) {
             try {
                 await addEmailToQueue({
@@ -392,6 +394,7 @@ export const logout = async (req, res) => {
                 console.log("Error queuing logout email:", queueError);
             }
         }
+        */
 
         res.status(200).cookie("token", null, cookieOptions).json({
             success: true,

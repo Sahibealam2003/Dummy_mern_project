@@ -344,66 +344,121 @@ const ProductList = () => {
                 <div className="mb-6 h-px" style={{ background: "#ede8e2" }} />
 
                 {/* Advanced Filters Toolbar */}
-                <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-[#ede8e2] rounded-3xl p-5 mb-8 shadow-sm">
-                    {/* Price Filter Inputs */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-xs font-black uppercase tracking-wider text-[#8c7e74]">Price Range</span>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="number"
-                                placeholder="Min Price"
-                                value={minPrice}
-                                onChange={(e) => {
-                                    setMinPrice(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="w-24 rounded-xl border border-[#ede8e2] px-3.5 py-2 text-xs bg-white text-[#2c2420] placeholder-[#a69c93] focus:outline-none focus:border-[#e8622a]"
-                            />
-                            <span className="text-xs text-[#8c7e74]">-</span>
-                            <input
-                                type="number"
-                                placeholder="Max Price"
-                                value={maxPrice}
-                                onChange={(e) => {
-                                    setMaxPrice(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="w-24 rounded-xl border border-[#ede8e2] px-3.5 py-2 text-xs bg-white text-[#2c2420] placeholder-[#a69c93] focus:outline-none focus:border-[#e8622a]"
-                            />
-                        </div>
-                    </div>
+                <div className="bg-white/90 backdrop-blur-md border border-[#ede8e2] rounded-3xl p-6 mb-8 shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        
+                        {/* Price Filter Column */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-black uppercase tracking-wider text-[#8c7e74]">Price Range ($)</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3.5">
+                                {/* Price inputs */}
+                                <div className="flex items-center gap-2 bg-stone-50 border border-[#ede8e2] rounded-2xl px-3 py-1.5 focus-within:border-[#e8622a] focus-within:bg-white transition-all shadow-inner">
+                                    <span className="text-xs text-[#8c7e74] font-semibold">$</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Min"
+                                        value={minPrice}
+                                        onChange={(e) => {
+                                            setMinPrice(e.target.value);
+                                            setPage(1);
+                                        }}
+                                        className="w-16 bg-transparent text-xs font-bold text-[#2c2420] outline-none placeholder-[#a69c93]"
+                                    />
+                                    <span className="text-stone-300">|</span>
+                                    <span className="text-xs text-[#8c7e74] font-semibold">$</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Max"
+                                        value={maxPrice}
+                                        onChange={(e) => {
+                                            setMaxPrice(e.target.value);
+                                            setPage(1);
+                                        }}
+                                        className="w-16 bg-transparent text-xs font-bold text-[#2c2420] outline-none placeholder-[#a69c93]"
+                                    />
+                                </div>
 
-                    {/* Sorting Dropdown & Actions */}
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-black uppercase tracking-wider text-[#8c7e74]">Sort By</span>
-                            <select
-                                value={sort}
-                                onChange={(e) => {
-                                    setSort(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="rounded-xl border border-[#ede8e2] px-4 py-2 text-xs bg-white text-[#2c2420] focus:outline-none focus:border-[#e8622a] cursor-pointer"
-                            >
-                                <option value="newest">Newest Arrivals</option>
-                                <option value="price-asc">Price: Low to High</option>
-                                <option value="price-desc">Price: High to Low</option>
-                            </select>
+                                {/* Quick selection pills */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {[
+                                        { label: "Under $25", min: 0, max: 25 },
+                                        { label: "$25 - $100", min: 25, max: 100 },
+                                        { label: "$100+", min: 100, max: "" }
+                                    ].map((range) => {
+                                        const isSelected = Number(minPrice) === range.min && (range.max === "" ? maxPrice === "" : Number(maxPrice) === range.max);
+                                        return (
+                                            <button
+                                                key={range.label}
+                                                type="button"
+                                                onClick={() => {
+                                                    setMinPrice(range.min);
+                                                    setMaxPrice(range.max);
+                                                    setPage(1);
+                                                }}
+                                                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold border transition-all duration-200 cursor-pointer active:scale-95 ${
+                                                    isSelected 
+                                                        ? "bg-[#e8622a]/10 border-[#e8622a] text-[#e8622a] shadow-sm scale-[1.02]" 
+                                                        : "bg-white border-[#ede8e2] text-[#6b5e54] hover:border-stone-400 hover:text-[#2c2420]"
+                                                }`}
+                                            >
+                                                {range.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
 
-                        {(minPrice || maxPrice || sort !== "newest") && (
-                            <button
-                                onClick={() => {
-                                    setMinPrice("");
-                                    setMaxPrice("");
-                                    setSort("newest");
-                                    setPage(1);
-                                }}
-                                className="text-xs text-rose-500 hover:text-rose-600 font-bold border border-rose-200 hover:border-rose-300 bg-rose-50/50 rounded-xl px-4 py-2 transition-colors cursor-pointer"
-                            >
-                                Reset Filters
-                            </button>
-                        )}
+                        {/* Sorting Column */}
+                        <div className="space-y-3">
+                            <span className="text-xs font-black uppercase tracking-wider text-[#8c7e74] block">Sort Products By</span>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex gap-1 bg-stone-50 border border-[#ede8e2] p-1.5 rounded-2xl shadow-inner">
+                                    {[
+                                        { value: "newest", label: "Newest" },
+                                        { value: "price-asc", label: "Price: Low to High" },
+                                        { value: "price-desc", label: "Price: High to Low" }
+                                    ].map((opt) => {
+                                        const isSelected = sort === opt.value;
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSort(opt.value);
+                                                    setPage(1);
+                                                }}
+                                                className={`rounded-xl px-4 py-2 text-xs font-extrabold transition-all duration-200 cursor-pointer ${
+                                                    isSelected
+                                                        ? "bg-white text-[#e8622a] border border-[#ede8e2] shadow-sm scale-[1.02]"
+                                                        : "text-[#6b5e54] hover:text-[#2c2420] border border-transparent"
+                                                }`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {(minPrice || maxPrice || sort !== "newest") && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMinPrice("");
+                                            setMaxPrice("");
+                                            setSort("newest");
+                                            setPage(1);
+                                        }}
+                                        className="text-xs text-rose-500 hover:text-rose-600 font-bold border border-rose-100 hover:border-rose-200 bg-rose-50/40 rounded-xl px-4 py-2 transition-all cursor-pointer hover:bg-rose-50 active:scale-95"
+                                    >
+                                        Clear All
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 

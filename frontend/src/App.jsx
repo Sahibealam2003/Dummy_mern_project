@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { fetchCart } from "./reducers/cartSlice";
 import ProductList from "./components/ProductList";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -20,6 +21,7 @@ import AdminPanel from "./components/AdminPanel";
 import Demo from "@/components/ui/demo";
 
 function AppContent({ isCartOpen, setIsCartOpen }) {
+  const dispatch = useDispatch();
   const location = useLocation();
   const isDealsPage = location.pathname === "/todays-deals";
   const [showFooter, setShowFooter] = useState(true);
@@ -27,6 +29,12 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
   
   const { isLoggedIn, user } = useSelector((state) => state.auth);
   const isAdmin = isLoggedIn && user?.role === "admin";
+
+  React.useEffect(() => {
+    if (!isAdmin) {
+      dispatch(fetchCart());
+    }
+  }, [isLoggedIn, isAdmin, dispatch]);
 
   React.useEffect(() => {
     const isSpecialPage = ["/checkout", "/login", "/signup", "/admin", "/demo", "/forgot-password"].includes(location.pathname) || location.pathname.startsWith("/reset-password/");

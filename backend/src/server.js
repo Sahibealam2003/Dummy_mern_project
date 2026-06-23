@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import specialOfferRoutes from "./routes/specialOfferRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
 import { seedProducts } from "./controllers/productController.js";
 import { seedSpecialOffers } from "./controllers/specialOfferController.js";
 import "./queues/emailWorker.js";
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/special-offers", specialOfferRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/cart", cartRoutes);
 
 connectDB().then(() => {
     seedProducts();

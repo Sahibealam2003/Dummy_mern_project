@@ -9,7 +9,8 @@ import {
     X,
     User,
     LogOut,
-    HelpCircle
+    HelpCircle,
+    ShoppingCart
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
         { label: "Products", icon: ShoppingBag, to: "/admin?tab=products" },
         { label: "Special Offers", icon: Tag, to: "/admin?tab=offers" },
+        { label: "Orders", icon: ShoppingCart, to: "/admin?tab=orders" },
     ];
 
     return (
@@ -133,6 +135,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         >
                             <Menu className="h-5 w-5" />
                         </button>
+                        
+                        {/* Clickable Mobile Logo */}
+                        <Link to="/" className="md:hidden flex items-center gap-2 select-none group">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#e8622a] to-[#c44e1e] text-white shadow-md shadow-[#e8622a]/20 group-hover:scale-105 transition-transform duration-300">
+                                <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
+                            </div>
+                            <div className="flex items-baseline">
+                                <span className="text-sm font-black tracking-tight" style={{ color: "#2c2420" }}>SHOP</span>
+                                <span className="text-sm font-black tracking-tight" style={{ color: "#e8622a" }}>x</span>
+                            </div>
+                        </Link>
                     </div>
 
                     <div className="flex items-center gap-4">

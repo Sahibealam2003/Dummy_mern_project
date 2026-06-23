@@ -85,8 +85,8 @@ const AdminPanel = () => {
     const fetchProducts = async () => {
         try {
             setProductsLoading(true);
-            const data = await getAllProducts();
-            setProducts(data);
+            const data = await getAllProducts({ limit: 1000 });
+            setProducts(data.products || data);
         } catch (err) {
             console.error("Failed to load products:", err);
         } finally {

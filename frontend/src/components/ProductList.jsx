@@ -149,33 +149,82 @@ const ProductList = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    
+    // Search states (debounced)
+    const [searchTerm, setSearchTerm] = useState("");
     const [search, setSearch] = useState("");
+    
+    // Filters & Sorting states
     const [categoryFilter, setCategoryFilter] = useState("");
+    const [minPrice, setMinPrice] = useState("");
+    const [maxPrice, setMaxPrice] = useState("");
+    const [sort, setSort] = useState("newest");
+    
+    // Pagination states
+    const [page, setPage] = useState(1);
+    const [pages, setPages] = useState(1);
+    const [totalProducts, setTotalProducts] = useState(0);
+
+    // Global count helper list
+    const [allProductsForCounts, setAllProductsForCounts] = useState([]);
+
+    // Static categories list to prevent them from disappearing during pagination
+    const categories = ["All", "electronics", "jewelery", "men's clothing", "women's clothing"];
+
+    const loadAllProductsOnce = async () => {
+        try {
+            const data = await getAllProducts({ limit: 1000 });
+            setAllProductsForCounts(data.products || []);
+        } catch (e) {
+            console.error("Error loading products count list:", e);
+        }
+    };
 
     const loadProducts = async () => {
+        setLoading(true);
         try {
-            const data = await getAllProducts();
-            setProducts(data);
+            const params = {
+                search,
+                category: categoryFilter,
+                sort,
+                page,
+                limit: 8
+            };
+            if (minPrice !== "") params.minPrice = Number(minPrice);
+            if (maxPrice !== "") params.maxPrice = Number(maxPrice);
+
+            const data = await getAllProducts(params);
+            
+            setProducts(data.products || []);
+            setPages(data.pages || 1);
+            setTotalProducts(data.totalProducts || 0);
         } catch (error) {
-            console.error(error);
+            console.error("Error loading products:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { loadProducts(); }, []);
+    // Load static counts once on mount
+    useEffect(() => {
+        loadAllProductsOnce();
+    }, []);
 
-    const categories = ["All", ...new Set(products.map((p) => p.category))];
+    // Debounce search term
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearch(searchTerm);
+            setPage(1); // Reset page on new search
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
-    const filtered = products.filter((p) => {
-        const matchSearch =
-            p.title.toLowerCase().includes(search.toLowerCase()) ||
-            p.category.toLowerCase().includes(search.toLowerCase());
-        const matchCat = categoryFilter
-            ? p.category.toLowerCase().includes(categoryFilter.toLowerCase())
-            : true;
-        return matchSearch && matchCat;
-    });
+    // Fetch filtered products
+    useEffect(() => {
+        loadProducts();
+    }, [search, categoryFilter, minPrice, maxPrice, sort, page]);
+
+    const filtered = products; // maintains compatibility with mapping below
 
     return (
         <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
@@ -196,19 +245,19 @@ const ProductList = () => {
                     <div 
                         className="w-full max-w-xl flex items-center gap-3 rounded-full border px-5 py-3.5 bg-white border-[#e4dfd9] transition-all duration-300 focus-within:border-[#e8622a] focus-within:ring-4 focus-within:ring-[#e8622a]/10 focus-within:scale-[1.01] shadow-sm focus-within:shadow-md"
                     >
-                        <svg className="h-5 w-5 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" style={{ color: search ? "#e8622a" : "#8c7e74" }}>
+                        <svg className="h-5 w-5 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" style={{ color: searchTerm ? "#e8622a" : "#8c7e74" }}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                         </svg>
                         <input
                             type="text"
                             placeholder="Search by title, category, brand..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full text-base outline-none font-medium bg-transparent text-[#2c2420] placeholder-[#a69c93]"
                         />
-                        {search && (
+                        {searchTerm && (
                             <button 
-                                onClick={() => setSearch("")} 
+                                onClick={() => setSearchTerm("")} 
                                 className="text-[#8c7e74] hover:text-[#e8622a] hover:scale-110 active:scale-95 transition-all cursor-pointer font-extrabold text-sm px-1.5"
                             >
                                 ✕
@@ -229,7 +278,9 @@ const ProductList = () => {
                             <button
                                 key={tag.label}
                                 onClick={() => {
+                                    setSearchTerm("");
                                     setCategoryFilter(tag.val);
+                                    setPage(1);
                                     const target = document.getElementById("product-section");
                                     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
                                 }}
@@ -248,11 +299,11 @@ const ProductList = () => {
                 {/* Section header */}
                 <div className="flex flex-wrap items-center gap-6 mb-6">
                     <div>
-                        <h2 className="text-xl font-bold" style={{ color: "#2c2420" }}>
+                        <h2 className="text-xl font-bold capitalize" style={{ color: "#2c2420" }}>
                             {categoryFilter ? `${categoryFilter}` : "All Products"}
                         </h2>
                         <p className="text-sm mt-0.5" style={{ color: "#8c7e74" }}>
-                            {filtered.length} product{filtered.length !== 1 ? "s" : ""} available
+                            {totalProducts} product{totalProducts !== 1 ? "s" : ""} available
                         </p>
                     </div>
 
@@ -260,7 +311,10 @@ const ProductList = () => {
                         {/* Search chip */}
                         {search && (
                             <button
-                                onClick={() => setSearch("")}
+                                onClick={() => {
+                                    setSearchTerm("");
+                                    setPage(1);
+                                }}
                                 className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm cursor-pointer hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600"
                                 style={{ background: "#fff5f5", borderColor: "#fed7d7", color: "#e53e3e" }}
                                 title="Clear Search"
@@ -272,7 +326,10 @@ const ProductList = () => {
                         {/* Category chip */}
                         {categoryFilter && (
                             <button
-                                onClick={() => setCategoryFilter("")}
+                                onClick={() => {
+                                    setCategoryFilter("");
+                                    setPage(1);
+                                }}
                                 className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm cursor-pointer hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600"
                                 style={{ background: "#fff3ed", borderColor: "#f9cbb3", color: "#e8622a" }}
                                 title="Clear Category"
@@ -285,6 +342,70 @@ const ProductList = () => {
 
                 {/* Divider */}
                 <div className="mb-6 h-px" style={{ background: "#ede8e2" }} />
+
+                {/* Advanced Filters Toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-[#ede8e2] rounded-3xl p-5 mb-8 shadow-sm">
+                    {/* Price Filter Inputs */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-xs font-black uppercase tracking-wider text-[#8c7e74]">Price Range</span>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                placeholder="Min Price"
+                                value={minPrice}
+                                onChange={(e) => {
+                                    setMinPrice(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="w-24 rounded-xl border border-[#ede8e2] px-3.5 py-2 text-xs bg-white text-[#2c2420] placeholder-[#a69c93] focus:outline-none focus:border-[#e8622a]"
+                            />
+                            <span className="text-xs text-[#8c7e74]">-</span>
+                            <input
+                                type="number"
+                                placeholder="Max Price"
+                                value={maxPrice}
+                                onChange={(e) => {
+                                    setMaxPrice(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="w-24 rounded-xl border border-[#ede8e2] px-3.5 py-2 text-xs bg-white text-[#2c2420] placeholder-[#a69c93] focus:outline-none focus:border-[#e8622a]"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Sorting Dropdown & Actions */}
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-black uppercase tracking-wider text-[#8c7e74]">Sort By</span>
+                            <select
+                                value={sort}
+                                onChange={(e) => {
+                                    setSort(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="rounded-xl border border-[#ede8e2] px-4 py-2 text-xs bg-white text-[#2c2420] focus:outline-none focus:border-[#e8622a] cursor-pointer"
+                            >
+                                <option value="newest">Newest Arrivals</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                            </select>
+                        </div>
+
+                        {(minPrice || maxPrice || sort !== "newest") && (
+                            <button
+                                onClick={() => {
+                                    setMinPrice("");
+                                    setMaxPrice("");
+                                    setSort("newest");
+                                    setPage(1);
+                                }}
+                                className="text-xs text-rose-500 hover:text-rose-600 font-bold border border-rose-200 hover:border-rose-300 bg-rose-50/50 rounded-xl px-4 py-2 transition-colors cursor-pointer"
+                            >
+                                Reset Filters
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {/* Categories filtering strip */}
                 {categories.length > 1 && (() => {
@@ -318,8 +439,8 @@ const ProductList = () => {
                     };
 
                     const getCatCount = (cat) => {
-                        if (cat === "All") return products.length;
-                        return products.filter(
+                        if (cat === "All") return allProductsForCounts.length;
+                        return allProductsForCounts.filter(
                             (p) => p.category.toLowerCase() === cat.toLowerCase()
                         ).length;
                     };
@@ -442,7 +563,7 @@ const ProductList = () => {
                         <p className="text-sm" style={{ color: "#8c7e74" }}>Try a different search term</p>
                     </div>
                 ) : (
-                    <div className="stagger grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="stagger grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
                         {filtered.map((product) => (
                             <ProductCard
                                 key={product.id}
@@ -456,6 +577,54 @@ const ProductList = () => {
                                 }}
                             />
                         ))}
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {pages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-12 bg-white border border-[#ede8e2] rounded-2xl p-3 w-fit mx-auto shadow-sm animate-fade-in">
+                        {/* Prev Button */}
+                        <button
+                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                            disabled={page === 1}
+                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#ede8e2] text-[#8c7e74] hover:bg-stone-50 hover:text-[#2c2420] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#8c7e74] active:scale-95 transition-all cursor-pointer"
+                            title="Previous Page"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        {/* Page Numbers */}
+                        {Array.from({ length: pages }).map((_, idx) => {
+                            const pageNum = idx + 1;
+                            const isCurrent = pageNum === page;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setPage(pageNum)}
+                                    className={`h-9 w-9 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                                        isCurrent 
+                                            ? "bg-[#e8622a] text-white shadow-md shadow-[#e8622a]/20" 
+                                            : "border border-[#ede8e2] text-[#6b5e54] hover:bg-stone-50 hover:text-[#2c2420]"
+                                    }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        {/* Next Button */}
+                        <button
+                            onClick={() => setPage(prev => Math.min(prev + 1, pages))}
+                            disabled={page === pages}
+                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#ede8e2] text-[#8c7e74] hover:bg-stone-50 hover:text-[#2c2420] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#8c7e74] active:scale-95 transition-all cursor-pointer"
+                            title="Next Page"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
                     </div>
                 )}
             </div>

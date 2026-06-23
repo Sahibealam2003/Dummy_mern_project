@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addToCart, incrementQuantity, decrementQuantity } from "../reducers/cartSlice";
 import { deleteProductApi } from "../services/api";
+import { toggleWishlistApi } from "../services/authApi";
+import { updateUser } from "../reducers/authSlice";
 
 const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
     const [showRemovePopup, setShowRemovePopup] = useState(false);
@@ -20,6 +22,30 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
         state.cart.products.find((p) => p.id === product.id)
     );
     const quantityInCart = cartItem ? cartItem.quantity : 0;
+
+    const isWishlisted = isLoggedIn && user?.wishlist?.some(item => {
+        const wishId = (item._id || item)?.toString();
+        const prodId = (product.id || product._id)?.toString();
+        return wishId === prodId;
+    });
+
+    const handleWishlistToggle = async (e) => {
+        e.stopPropagation();
+        if (!isLoggedIn) {
+            navigate("/login");
+            return;
+        }
+
+        try {
+            const productId = product.id || product._id;
+            const res = await toggleWishlistApi(productId);
+            if (res.success) {
+                dispatch(updateUser({ wishlist: res.wishlist }));
+            }
+        } catch (err) {
+            console.error("Error toggling wishlist:", err);
+        }
+    };
 
     useEffect(() => {
         if (!showRemovePopup) return;
@@ -98,6 +124,31 @@ const ProductCard = ({ product, onClick, onDeleteSuccess }) => {
                         >
                             {quantityInCart}
                         </span>
+                    )}
+
+                    {/* Wishlist Heart Toggle */}
+                    {isLoggedIn && !isAdmin && (
+                        <button
+                            onClick={handleWishlistToggle}
+                            className={`absolute right-3 ${quantityInCart > 0 ? "top-10" : "top-3"} z-30 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm border border-[#ede8e2] shadow-sm hover:scale-110 hover:bg-white active:scale-90 transition-all cursor-pointer`}
+                            title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                        >
+                            <svg
+                                className={`h-4 w-4 transition-colors ${
+                                    isWishlisted ? "text-rose-500 fill-current" : "text-[#8c7e74]"
+                                }`}
+                                fill={isWishlisted ? "currentColor" : "none"}
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth="2.2"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                />
+                            </svg>
+                        </button>
                     )}
 
                     {/* Hover Action Overlay */}

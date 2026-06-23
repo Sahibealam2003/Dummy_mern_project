@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { clearCart } from "../reducers/cartSlice";
-import { getAllSpecialOffers } from "../services/api";
+import { getAllSpecialOffers, createOrder } from "../services/api";
 
 const FIELD_CLS = "w-full rounded-xl border border-[#e4dfd9] bg-[#fafafa] px-4 py-2 text-sm text-[#2c2420] placeholder-[#a69c93] outline-none focus:bg-[#fafafa] focus:border-[#e8622a] focus:ring-4 focus:ring-[#e8622a]/10 transition-all duration-200";
 const LABEL_CLS = "block text-xs font-semibold uppercase tracking-wider text-[#8c7e74] mb-1.5";
@@ -295,9 +295,20 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
         }
     };
 
-    const handlePlaceOrder = (e) => {
+    const handlePlaceOrder = async (e) => {
         e.preventDefault();
         setStep("processing");
+
+        const cardLastFour = cardNumber.replace(/\s/g, "").slice(-4) || "••••";
+
+        // Map cart items to the database structure
+        const mappedItems = cartItems.map((item) => ({
+            product: item.id || item._id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+        }));
 
         const snapshot = {
             items: [...cartItems],
@@ -312,17 +323,42 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
             address: address,
             city: city,
             zip: zip,
-            cardLastFour: cardNumber.replace(/\s/g, "").slice(-4) || "••••"
+            cardLastFour
         };
         setOrderSummarySnapshot(snapshot);
 
-        // Simulate payment request API delay
-        setTimeout(() => {
-            const num = `SHOPX-${Math.floor(100000 + Math.random() * 900000)}`;
-            setOrderNumber(num);
-            setStep("success");
-            dispatch(clearCart());
-        }, 2500);
+        try {
+            const res = await createOrder({
+                orderItems: mappedItems,
+                shippingAddress: {
+                    address,
+                    city,
+                    zip
+                },
+                paymentInfo: {
+                    status: "Paid",
+                    cardLastFour,
+                    paymentMethod: "Card"
+                },
+                totalPrice: finalTotal
+            });
+
+            if (res.success) {
+                // Simulate a slight delay to feel natural/processing payment before success screen
+                setTimeout(() => {
+                    setOrderNumber(res.order.orderNumber);
+                    setStep("success");
+                    dispatch(clearCart());
+                }, 1500);
+            } else {
+                setStep("form");
+                alert(res.error || "Failed to place order. Please try again.");
+            }
+        } catch (err) {
+            console.error("Checkout order placement error:", err);
+            setStep("form");
+            alert(err.response?.data?.error || "Failed to place order. Please check details and try again.");
+        }
     };
 
     return (

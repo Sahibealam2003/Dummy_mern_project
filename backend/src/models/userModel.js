@@ -50,10 +50,22 @@ const userSchema = new mongoose.Schema({
     default:null
 },
 
-emailOTPExpire:{
-    type:Date,
-    default:null
-}
+    emailOTPExpire:{
+        type:Date,
+        default:null
+    },
+    wishlist: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product"
+    }],
+    resetPasswordToken: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpire: {
+        type: Date,
+        default: null
+    }
 }, {
     timestamps: true
 });

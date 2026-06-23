@@ -12,8 +12,9 @@ const TrendingProducts = () => {
     const loadProducts = async () => {
         try {
             const data = await getAllProducts();
+            const productsArray = data.products || data;
             // Filter only products with a rating greater than 4.0
-            const trending = data.filter((p) => p.rating && p.rating.rate > 4);
+            const trending = productsArray.filter((p) => p.rating && p.rating.rate > 4);
             setProducts(trending);
         } catch (error) {
             console.error(error);

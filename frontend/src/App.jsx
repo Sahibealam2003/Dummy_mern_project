@@ -9,8 +9,12 @@ import TodaysDeals from "./components/TodaysDeals";
 import TrendingProducts from "./components/TrendingProducts";
 import SpecialOffers from "./components/SpecialOffers";
 import Checkout from "./components/Checkout";
+import OrderHistory from "./components/OrderHistory";
+import Wishlist from "./components/Wishlist";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 import DummyPage from "./components/DummyPage";
 import AdminPanel from "./components/AdminPanel";
 import Demo from "@/components/ui/demo";
@@ -25,7 +29,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
   const isAdmin = isLoggedIn && user?.role === "admin";
 
   React.useEffect(() => {
-    const isSpecialPage = ["/checkout", "/login", "/signup", "/admin", "/demo"].includes(location.pathname);
+    const isSpecialPage = ["/checkout", "/login", "/signup", "/admin", "/demo", "/forgot-password"].includes(location.pathname) || location.pathname.startsWith("/reset-password/");
     setShowFooter(!isSpecialPage);
     setShowNavbar(location.pathname !== "/admin" && location.pathname !== "/demo");
   }, [location.pathname]);
@@ -41,7 +45,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
       {/* Two-row navbar = 104px (64px top + 40px secondary) */}
       <main 
         className={isDealsPage ? "flex-1 flex items-center justify-center p-4" : "flex-1"} 
-        style={{ paddingTop: ["/admin", "/demo"].includes(location.pathname) ? 0 : (location.pathname === "/login" || location.pathname === "/signup") ? 76 : 104 }}
+        style={{ paddingTop: ["/admin", "/demo"].includes(location.pathname) ? 0 : (location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/forgot-password" || location.pathname.startsWith("/reset-password/")) ? 76 : 104 }}
       >
         <Routes>
           <Route path="/" element={<ProductList />} />
@@ -51,8 +55,12 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
           <Route path="/special-offers" element={<SpecialOffers />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/demo" element={<Demo />} />
+          <Route path="/orders" element={<OrderHistory />} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route 
             path="/checkout" 
             element={

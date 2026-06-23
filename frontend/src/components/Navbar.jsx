@@ -207,6 +207,36 @@ const Navbar = ({ onCartOpen }) => {
                         </button>
                     )}
 
+                    {/* Wishlist Header Badge */}
+                    {isLoggedIn && user?.role !== "admin" && (
+                        <button
+                            onClick={() => nav("/wishlist")}
+                            className="relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:bg-[#e8622a]/8 hover:scale-105 active:scale-95 group cursor-pointer"
+                            aria-label="View wishlist"
+                        >
+                            <svg
+                                className="h-5 w-5 text-[#2c2420] group-hover:text-rose-500 transition-colors duration-200"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth="2.2"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                />
+                            </svg>
+                            {user?.wishlist?.length > 0 && (
+                                <span
+                                    className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[9px] font-black text-white bg-gradient-to-r from-rose-500 to-pink-600 shadow-[0_2px_8px_rgba(244,63,94,0.4)] border border-white z-10"
+                                >
+                                    {user.wishlist.length}
+                                </span>
+                            )}
+                        </button>
+                    )}
+
 
 
                     {/* User Profile / Auth Button */}
@@ -298,6 +328,30 @@ const Navbar = ({ onCartOpen }) => {
                                             </svg>
                                             My Profile
                                         </button>
+                                        {user?.role !== "admin" && (
+                                            <Link
+                                                to="/orders"
+                                                onClick={() => setDropdownOpen(false)}
+                                                className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
+                                            >
+                                                <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                </svg>
+                                                My Orders
+                                            </Link>
+                                        )}
+                                        {user?.role !== "admin" && (
+                                            <Link
+                                                to="/wishlist"
+                                                onClick={() => setDropdownOpen(false)}
+                                                className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-[#5a4e46] hover:bg-[#e8622a]/5 hover:text-[#e8622a] transition-all duration-150 cursor-pointer"
+                                            >
+                                                <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                </svg>
+                                                My Wishlist
+                                            </Link>
+                                        )}
                                         <button
                                             onClick={async () => {
                                                 try {

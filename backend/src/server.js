@@ -6,6 +6,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import specialOfferRoutes from "./routes/specialOfferRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 import { seedProducts } from "./controllers/productController.js";
 import { seedSpecialOffers } from "./controllers/specialOfferController.js";
 import "./queues/emailWorker.js";
@@ -27,6 +28,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/special-offers", specialOfferRoutes);
+app.use("/api/orders", orderRoutes);
 
 connectDB().then(() => {
     seedProducts();

@@ -5,6 +5,7 @@ import { uploadToCloudinary } from "../config/cloudinary.js";
 import { addEmailToQueue } from "../queues/emailQueue.js";
 import redis from "../config/redis.js"
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 const tempUsers = new Map();
 
@@ -218,7 +219,8 @@ export const login = async (req, res) => {
                 phoneNumber: user.phoneNumber,
                 avatar: user.avatar,
                 isVerified: user.isVerified,
-                role: user.role
+                role: user.role,
+                wishlist: user.wishlist || []
             }
         });
 
@@ -337,7 +339,8 @@ export const verifyOTP = async (req, res) => {
                 phoneNumber: user.phoneNumber,
                 avatar: user.avatar,
                 isVerified: user.isVerified,
-                role: user.role
+                role: user.role,
+                wishlist: user.wishlist || []
             }
         });
 
@@ -352,12 +355,31 @@ export const verifyOTP = async (req, res) => {
 export const logout = async (req, res) => {
     try {
         const user = req.user;
+        const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
+
+        // Clear cookie options
         const cookieOptions = {
             expires: new Date(Date.now()),
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax"
         };
+
+        // Blacklist token in Redis if valid
+        if (token) {
+            try {
+                const decoded = jwt.decode(token);
+                if (decoded && decoded.exp) {
+                    const remainingSeconds = decoded.exp - Math.floor(Date.now() / 1000);
+                    if (remainingSeconds > 0) {
+                        await redis.set(`blacklist:${token}`, "true", "EX", remainingSeconds);
+                        console.log(`Token blacklisted in Redis for ${remainingSeconds} seconds`);
+                    }
+                }
+            } catch (redisError) {
+                console.error("Redis token blacklisting error:", redisError);
+            }
+        }
 
         if (user) {
             try {
@@ -428,11 +450,175 @@ export const updateProfile = async (req, res) => {
                 phoneNumber: user.phoneNumber,
                 avatar: user.avatar,
                 isVerified: user.isVerified,
-                role: user.role
+                role: user.role,
+                wishlist: user.wishlist || []
             }
         });
     } catch (error) {
         console.error("Error in updateProfile:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+// Toggle wishlist status for a product (customers only)
+export const toggleWishlist = async (req, res) => {
+    try {
+        if (req.user.role === "admin") {
+            return res.status(403).json({ error: "Access denied. Admins cannot have a wishlist" });
+        }
+
+        const { productId } = req.params;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const index = user.wishlist.indexOf(productId);
+        if (index > -1) {
+            // Remove product from wishlist
+            user.wishlist.splice(index, 1);
+            await user.save();
+            return res.status(200).json({
+                success: true,
+                message: "Removed from wishlist",
+                wishlist: user.wishlist
+            });
+        } else {
+            // Add product to wishlist
+            user.wishlist.push(productId);
+            await user.save();
+            return res.status(200).json({
+                success: true,
+                message: "Added to wishlist",
+                wishlist: user.wishlist
+            });
+        }
+    } catch (error) {
+        console.error("Error in toggleWishlist:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+// Get populated user wishlist (customers only)
+export const getWishlist = async (req, res) => {
+    try {
+        if (req.user.role === "admin") {
+            return res.status(403).json({ error: "Access denied. Admins cannot have a wishlist" });
+        }
+
+        const user = await User.findById(req.user._id).populate("wishlist");
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Filter out any deleted products if they still exist in the wishlist array
+        const activeWishlist = user.wishlist.filter(item => item !== null);
+
+        res.status(200).json(activeWishlist);
+    } catch (error) {
+        console.error("Error in getWishlist:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+// Request password reset link (forgot password)
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: "Email is required" });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            // Secure response: don't reveal if email exists, or reveal it?
+            // Usually we return a message indicating if the email exists it was sent, but the user requested:
+            // "Reset password request route banayein jisme user apna email daale."
+            // "We have emailed your password reset link!" is nice.
+            // Let's return 404/invalid email for better UI feedback, or return success to prevent user enumeration?
+            // "Login rate limiting: 3 failed login attempts blocks email for 5 minutes".
+            // Let's return 404 if user not found, so they know they entered the wrong email. E-commerce platforms often say "User not found" to help real customers who mistyped. Let's return 404.
+            return res.status(404).json({ error: "No user found with that email address" });
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(20).toString("hex");
+
+        // Hash and set reset fields
+        const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+
+        await user.save();
+
+        // Queue reset email
+        const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
+        const emailMessage = `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\nPlease click on the following link, or paste this into your browser to complete the process within 30 minutes:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.\n`;
+
+        try {
+            await addEmailToQueue({
+                email: user.email,
+                subject: "Password Reset Request",
+                message: emailMessage
+            });
+            console.log(`Password reset email queued for ${user.email}`);
+        } catch (queueErr) {
+            console.error("Failed to queue password reset email:", queueErr);
+            // Rollback DB changes if queue fails
+            user.resetPasswordToken = null;
+            user.resetPasswordExpire = null;
+            await user.save();
+            return res.status(500).json({ error: "Failed to queue reset email. Please try again later." });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "We have emailed your password reset link!"
+        });
+    } catch (error) {
+        console.error("Error in forgotPassword:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+// Reset password with token
+export const resetPassword = async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ error: "Password is required" });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters long" });
+        }
+
+        const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
+
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: "Password reset token is invalid or has expired" });
+        }
+
+        // Update password and clear reset token fields
+        user.password = password;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpire = null;
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password updated successfully"
+        });
+    } catch (error) {
+        console.error("Error in resetPassword:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };

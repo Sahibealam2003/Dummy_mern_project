@@ -5,8 +5,8 @@ const API = axios.create({
     withCredentials: true,
 });
 
-export const getAllProducts = async () => {
-    const response = await API.get("/products");
+export const getAllProducts = async (params = {}) => {
+    const response = await API.get("/products", { params });
     return response.data;
 };
 
@@ -47,5 +47,30 @@ export const updateSpecialOfferApi = async (id, offerData) => {
 
 export const deleteSpecialOfferApi = async (id) => {
     const response = await API.delete(`/special-offers/${id}`);
+    return response.data;
+};
+
+export const createOrder = async (orderData) => {
+    const response = await API.post("/orders", orderData);
+    return response.data;
+};
+
+export const getMyOrders = async () => {
+    const response = await API.get("/orders/my-orders");
+    return response.data;
+};
+
+export const getOrderById = async (id) => {
+    const response = await API.get(`/orders/${id}`);
+    return response.data;
+};
+
+export const getAllOrders = async () => {
+    const response = await API.get("/orders/all/list");
+    return response.data;
+};
+
+export const updateOrderStatus = async (id, status) => {
+    const response = await API.put(`/orders/${id}/status`, { status });
     return response.data;
 };

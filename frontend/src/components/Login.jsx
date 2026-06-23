@@ -169,6 +169,16 @@ const Login = () => {
                                 </button>
                             </div>
 
+                            <div className="flex justify-end -mt-3">
+                                <Link 
+                                    to="/forgot-password" 
+                                    className="text-xs font-bold text-[#8c9ba5] hover:text-[#e8622a] transition-colors"
+                                    id="forgot-password-link"
+                                >
+                                    Forgot Password?
+                                </Link>
+                            </div>
+
                             {/* Submit and Social */}
                             <div className="flex items-center justify-between pt-2">
                                 <button

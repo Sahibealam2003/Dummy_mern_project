@@ -16,7 +16,7 @@ const resetProducts = async () => {
         console.log("All products deleted from MongoDB.");
 
         console.log("Clearing Redis cache...");
-        await redis.del("products:all");
+        await redis.del("all_products");
         // Fetch all product keys if any and delete them
         try {
             const productKeys = await redis.keys("product:*");

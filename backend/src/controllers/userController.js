@@ -133,6 +133,17 @@ export const login = async (req, res) => {
             });
         }
 
+        const lowerCaseEmail = email.toLowerCase();
+        const blockedKey = `login_blocked:${lowerCaseEmail}`;
+        const attemptsKey = `login_attempts:${lowerCaseEmail}`;
+
+        const isBlocked = await redis.get(blockedKey);
+        if (isBlocked) {
+            return res.status(429).json({
+                error: "Too many failed login attempts. Please try again after 5 minutes."
+            });
+        }
+
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -150,10 +161,28 @@ export const login = async (req, res) => {
         const isPasswordValid = await user.comparePassword(password);
 
         if (!isPasswordValid) {
+            const attempts = await redis.incr(attemptsKey);
+
+            if (attempts === 1) {
+                await redis.expire(attemptsKey, 600);
+            }
+
+            if (attempts >= 3) {
+                await redis.set(blockedKey, "true", "EX", 300);
+                await redis.del(attemptsKey);
+                return res.status(429).json({
+                    error: "You have exceeded 3 incorrect login attempts. Blocked for 5 minutes."
+                });
+            }
+
             return res.status(401).json({
-                error: "Invalid password"
+                error: `Invalid password. You have ${3 - attempts} attempts left.`
             });
         }
+
+        
+        await redis.del(attemptsKey);
+        await redis.del(blockedKey);
 
         const token = jwt.sign(
             { id: user._id },

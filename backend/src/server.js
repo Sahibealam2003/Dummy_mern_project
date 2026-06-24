@@ -11,6 +11,7 @@ import cartRoutes from "./routes/cartRoutes.js";
 import { seedProducts } from "./controllers/productController.js";
 import { seedSpecialOffers } from "./controllers/specialOfferController.js";
 import "./queues/emailWorker.js";
+import "./queues/orderWorker.js";
 
 dotenv.config();
 

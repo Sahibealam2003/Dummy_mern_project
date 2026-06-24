@@ -59,14 +59,18 @@ const Navbar = ({ onCartOpen }) => {
 
     /* rotating promo ticker */
     useEffect(() => {
+        let timeoutId;
         const t = setInterval(() => {
             setPromoVisible(false);
-            setTimeout(() => {
+            timeoutId = setTimeout(() => {
                 setPromoIdx(i => (i + 1) % PROMOS.length);
                 setPromoVisible(true);
             }, 350);
         }, 3200);
-        return () => clearInterval(t);
+        return () => {
+            clearInterval(t);
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, []);
 
     const navItems = [

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
     const currentPath = location.pathname;

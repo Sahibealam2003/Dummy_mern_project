@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getAllProducts } from "../services/api";
 import ProductCard from "./ProductCard";
 import ProductDetails from "./ProductDetails";
@@ -148,6 +148,7 @@ const HeroBanner = () => {
 const ProductList = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     
     // Search states (debounced)
@@ -171,6 +172,8 @@ const ProductList = () => {
     // Static categories list to prevent them from disappearing during pagination
     const categories = ["All", "electronics", "jewelery", "men's clothing", "women's clothing"];
 
+    const sentinelRef = useRef(null);
+
     const loadAllProductsOnce = async () => {
         try {
             const data = await getAllProducts({ limit: 1000 });
@@ -180,14 +183,19 @@ const ProductList = () => {
         }
     };
 
-    const loadProducts = async () => {
-        setLoading(true);
+    const loadProducts = async (pageNum = 1, shouldAppend = false) => {
+        if (shouldAppend) {
+            setLoadingMore(true);
+        } else {
+            setLoading(true);
+        }
+        
         try {
             const params = {
                 search,
                 category: categoryFilter,
                 sort,
-                page,
+                page: pageNum,
                 limit: 8
             };
             if (minPrice !== "") params.minPrice = Number(minPrice);
@@ -195,13 +203,19 @@ const ProductList = () => {
 
             const data = await getAllProducts(params);
             
-            setProducts(data.products || []);
+            if (shouldAppend) {
+                setProducts(prev => [...prev, ...(data.products || [])]);
+            } else {
+                setProducts(data.products || []);
+            }
             setPages(data.pages || 1);
             setTotalProducts(data.totalProducts || 0);
+            setPage(pageNum);
         } catch (error) {
             console.error("Error loading products:", error);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
@@ -219,10 +233,40 @@ const ProductList = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    // Fetch filtered products
+    // Fetch products on filter change (reset to page 1)
     useEffect(() => {
-        loadProducts();
-    }, [search, categoryFilter, minPrice, maxPrice, sort, page]);
+        loadProducts(1, false);
+    }, [search, categoryFilter, minPrice, maxPrice, sort]);
+
+    // Function to load more products for infinite scroll
+    const loadMoreProducts = () => {
+        if (loading || loadingMore || page >= pages) return;
+        loadProducts(page + 1, true);
+    };
+
+    // Intersection Observer for infinite scroll
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const firstEntry = entries[0];
+                if (firstEntry.isIntersecting) {
+                    loadMoreProducts();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        const currentSentinel = sentinelRef.current;
+        if (currentSentinel) {
+            observer.observe(currentSentinel);
+        }
+
+        return () => {
+            if (currentSentinel) {
+                observer.unobserve(currentSentinel);
+            }
+        };
+    }, [page, pages, loading, loadingMore, search, categoryFilter, minPrice, maxPrice, sort]);
 
     const filtered = products; // maintains compatibility with mapping below
 
@@ -462,6 +506,8 @@ const ProductList = () => {
                     </div>
                 </div>
 
+                {/* Scroll Anchor removed for Infinite Scroll */}
+
                 {/* Categories filtering strip */}
                 {categories.length > 1 && (() => {
                     /* ── Category icon map ── */
@@ -635,53 +681,23 @@ const ProductList = () => {
                     </div>
                 )}
 
-                {/* Pagination Controls */}
-                {pages > 1 && (
-                    <div className="flex items-center justify-center gap-2 mt-12 bg-white border border-[#ede8e2] rounded-2xl p-3 w-fit mx-auto shadow-sm animate-fade-in">
-                        {/* Prev Button */}
-                        <button
-                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                            disabled={page === 1}
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#ede8e2] text-[#8c7e74] hover:bg-stone-50 hover:text-[#2c2420] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#8c7e74] active:scale-95 transition-all cursor-pointer"
-                            title="Previous Page"
-                        >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                {/* Infinite Scroll Sentinel & Loading Spinner */}
+                <div ref={sentinelRef} className="h-16 mt-8 mb-4 flex items-center justify-center w-full">
+                    {loadingMore && (
+                        <div className="flex items-center gap-2.5 text-xs font-extrabold tracking-wider uppercase text-[#8c7e74] animate-fade-in bg-white border border-[#ede8e2]/60 rounded-xl px-4 py-2.5 shadow-sm">
+                            <svg className="animate-spin h-4 w-4 text-[#e8622a]" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
-                        </button>
-
-                        {/* Page Numbers */}
-                        {Array.from({ length: pages }).map((_, idx) => {
-                            const pageNum = idx + 1;
-                            const isCurrent = pageNum === page;
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setPage(pageNum)}
-                                    className={`h-9 w-9 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
-                                        isCurrent 
-                                            ? "bg-[#e8622a] text-white shadow-md shadow-[#e8622a]/20" 
-                                            : "border border-[#ede8e2] text-[#6b5e54] hover:bg-stone-50 hover:text-[#2c2420]"
-                                    }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        {/* Next Button */}
-                        <button
-                            onClick={() => setPage(prev => Math.min(prev + 1, pages))}
-                            disabled={page === pages}
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#ede8e2] text-[#8c7e74] hover:bg-stone-50 hover:text-[#2c2420] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#8c7e74] active:scale-95 transition-all cursor-pointer"
-                            title="Next Page"
-                        >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-                )}
+                            <span>Loading more products...</span>
+                        </div>
+                    )}
+                    {!loadingMore && page >= pages && products.length > 0 && (
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#8c7e74] animate-fade-in bg-[#ede8e2]/25 border border-[#ede8e2]/50 px-4 py-2 rounded-xl">
+                            🎉 You've viewed all products
+                        </p>
+                    )}
+                </div>
             </div>
 
             {/* Modals */}

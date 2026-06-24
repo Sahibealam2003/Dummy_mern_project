@@ -8,6 +8,10 @@ const connection = new IORedis({
     maxRetriesPerRequest: null
 });
 
+connection.on("error", (err) => {
+    console.error("Redis Connection Error in Email Worker:", err);
+});
+
 const emailWorker = new Worker("EmailQueue", async (job) => {
     console.log(`Processing Job ID: ${job.id}`);
     const { email, subject, message } = job.data;

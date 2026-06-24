@@ -1,0 +1,255 @@
+
+This report documents the findings from scanning the MERN stack codebase. The scan 
+identified several critical reliability bugs, potential process-crashing errors, 
+memory leaks, and cache consistency issues.
+
+Below are the detailed findings and the recommended code changes to fix them.
+
+---
+
+### 1. SEVERE RELIABILITY & MEMORY LEAK: In-Memory timeouts for Order Status
+* **Location:** `backend/src/controllers/orderController.js` (Lines 148-187)
+* **Category:** Reliability Bug & Memory Leak (High Severity)
+* **Description:** 
+  The order status transitions (Processing -> Shipped -> Delivered) are managed 
+  using nested in-memory `setTimeout` blocks inside the `updateOrderStatus` request handler.
+* **Impact:**
+  - **Memory Leak:** Every time an order status is updated, the server retains active 
+    closures and references to large database documents (`foundOrder`, `orderId`, etc.) 
+    in memory for minutes, preventing garbage collection.
+  - **State Loss on Restart:** If the Node.js server crashes, restarts, redeploys, or 
+    auto-scales, all scheduled transitions in memory are lost forever. The orders 
+    will remain stuck in "Processing" or "Shipped" status permanently.
+  - **Scaling Issue:** In a multi-instance environment (horizontal scaling), the 
+    timeout only exists in the memory of the single instance that handled the request, 
+    making coordinating state transitions impossible.
+* **Recommended Fix:** 
+  Since the project already has Redis and BullMQ integrated, we should delegate 
+  these transitions to a persistent queue using delayed jobs.
+  
+  *Example implementation using a background queue (e.g., `orderQueue`):*
+  Instead of:
+  ```javascript
+  setTimeout(async () => { ... }, 60000);
+  ```
+  We should enqueue a delayed job:
+  ```javascript
+  // Enqueue a transition to Shipped in 1 minute
+  await orderQueue.add("transitionStatus", { orderId, targetStatus: "Shipped" }, { delay: 60000 });
+  ```
+
+---
+
+### 2. PROCESS CRASH VULNERABILITY: Missing Redis Connection Error Handlers
+* **Location:** 
+  - `backend/src/queues/emailQueue.js` (Lines 5-9)
+  - `backend/src/queues/emailWorker.js` (Lines 5-9)
+* **Category:** Application Crash Bug (High Severity)
+* **Description:** 
+  Both the email queue and email worker files instantiate their own private 
+  `IORedis` connections. Unlike `backend/src/config/redis.js`, they do not attach 
+  any `"error"` event listeners to these connection objects.
+* **Impact:** 
+  In Node.js, if an event emitter (like an `ioredis` connection) emits an `"error"` 
+  event (which happens whenever Redis restarts, crashes, or suffers a network drop) 
+  and there is no active listener registered for it, Node.js will throw an 
+  unhandled exception and crash the entire backend process immediately.
+* **Recommended Fix:** 
+  Attach an `.on("error")` listener to the Redis connections in both files.
+  
+  *Before (in `emailQueue.js` and `emailWorker.js`):*
+  ```javascript
+  const connection = new IORedis({
+      host: "127.0.0.1",
+      port: 6379,
+      maxRetriesPerRequest: null
+  });
+  ```
+  
+  *After/Fix:*
+  ```javascript
+  const connection = new IORedis({
+      host: "127.0.0.1",
+      port: 6379,
+      maxRetriesPerRequest: null
+  });
+
+  connection.on("error", (err) => {
+      console.error("Redis Connection Error in Email Queue/Worker:", err);
+  });
+  ```
+
+---
+
+### 3. BROKEN DEVELOPER ENDPOINT: `/api/auth/test-otps` always returns `[]`
+* **Location:** `backend/src/controllers/userController.js` (Lines 10 & 411-418)
+* **Category:** Functional Bug / Dead Code (Medium Severity)
+* **Description:** 
+  The `/api/auth/test-otps` route is intended to let developers view active OTPs 
+  during testing. It queries a local, in-memory `tempUsers` Map:
+  `const tempUsers = new Map();`
+  However, during signup, the application stores temporary user data and OTPs in 
+  **Redis** (`temp_user:${lowerCaseEmail}`) and never writes to the `tempUsers` Map.
+* **Impact:** 
+  The endpoint `/api/auth/test-otps` is completely broken and always returns `[]`. 
+  Developers cannot retrieve OTPs to verify user accounts during automated or manual 
+  testing without inspecting the Redis database directly or checking email logs.
+* **Recommended Fix:** 
+  Remove the unused `tempUsers` Map and rewrite `getTempUsers` to fetch active keys 
+  from Redis.
+  
+  *Before:*
+  ```javascript
+  const tempUsers = new Map();
+  ...
+  export const getTempUsers = (req, res) => {
+      const list = Array.from(tempUsers.entries()).map(([email, data]) => ({
+          email,
+          otp: data.otp,
+          expireAt: data.expireAt
+      }));
+      res.json(list);
+  }
+  ```
+  
+  *After/Fix:*
+  ```javascript
+  export const getTempUsers = async (req, res) => {
+      try {
+          // Fetch all active temporary user keys from Redis
+          const keys = await redis.keys("temp_user:*");
+          const list = [];
+          
+          for (const key of keys) {
+              const data = await redis.get(key);
+              if (data) {
+                  const parsed = JSON.parse(data);
+                  list.push({
+                      email: parsed.email,
+                      otp: parsed.otp,
+                      expireAt: parsed.expireAt
+                  });
+              }
+          }
+          res.json(list);
+      } catch (error) {
+          console.error("Error fetching temp users from Redis:", error);
+          res.status(500).json({ error: "Failed to retrieve test OTPs" });
+      }
+  };
+  ```
+
+---
+
+### 4. CACHE INCONSISTENCY BUG: Stale Product Lists after Database Reset
+* **Location:** `backend/resetProducts.js` (Lines 18-30)
+* **Category:** Cache Inconsistency Bug (Medium Severity)
+* **Description:** 
+  The database reset script deletes all products and seeds them from an external API. 
+  When doing so, it clears the `"all_products"` and `"product:*"` keys from Redis. 
+  However, it **fails to delete** the `"products:*"` keys.
+* **Impact:** 
+  The `getProducts` controller in `productController.js` caches paginated and filtered 
+  queries using the key pattern `"products:*"`. Because `resetProducts.js` does not 
+  clear this pattern, users will continue to see stale, cached product lists, prices, 
+  or counts on the home page or catalog after a database reset until the 1-hour 
+  Redis TTL expires.
+* **Recommended Fix:** 
+  Update `resetProducts.js` to also find and delete keys matching the `"products:*"` pattern.
+  
+  *Before:*
+  ```javascript
+  console.log("Clearing Redis cache...");
+  await redis.del("all_products");
+  try {
+      const productKeys = await redis.keys("product:*");
+      if (productKeys && productKeys.length > 0) {
+          await redis.del(productKeys);
+          console.log(`Deleted product keys from Redis: ${productKeys.join(", ")}`);
+      }
+  } catch (redisKeysError) { ... }
+  ```
+  
+  *After/Fix:*
+  ```javascript
+  console.log("Clearing Redis cache...");
+  await redis.del("all_products");
+  try {
+      // Clear individual product details cache
+      const productKeys = await redis.keys("product:*");
+      if (productKeys && productKeys.length > 0) {
+          await redis.del(productKeys);
+          console.log(`Deleted product keys from Redis: ${productKeys.join(", ")}`);
+      }
+      
+      // Clear paginated products list and filter cache
+      const productsListKeys = await redis.keys("products:*");
+      if (productsListKeys && productsListKeys.length > 0) {
+          await redis.del(productsListKeys);
+          console.log(`Deleted products list keys from Redis: ${productsListKeys.join(", ")}`);
+      }
+  } catch (redisKeysError) { ... }
+  ```
+
+---
+
+### 5. FRONTEND MEMORY LEAK: Uncleaned Timeout in Promo Ticker
+* **Location:** `frontend/src/components/Navbar.jsx` (Lines 60-70)
+* **Category:** Frontend Memory Leak (Low Severity)
+* **Description:** 
+  The `Navbar` component runs a `setInterval` to rotate the active promo code text. 
+  Inside the interval, it calls a `setTimeout` of 350ms to manage the fade-in/fade-out transition. 
+  However, it only clears the interval (`clearInterval(t)`) during the unmount cleanup.
+* **Impact:** 
+  If the `Navbar` component is unmounted (e.g., during log out or when switching to 
+  a page that doesn't render it) after the interval has fired but before the 350ms 
+  timeout has finished, the timeout callback will execute anyway and attempt to 
+  update React state (`setPromoIdx` and `setPromoVisible`) on an unmounted component. 
+  This causes a memory leak and prints warnings in the browser console.
+* **Recommended Fix:** 
+  Store the timeout ID in a variable and clean it up inside the hook's return function.
+  
+  *Before:*
+  ```javascript
+  useEffect(() => {
+      const t = setInterval(() => {
+          setPromoVisible(false);
+          setTimeout(() => {
+              setPromoIdx(i => (i + 1) % PROMOS.length);
+              setPromoVisible(true);
+          }, 350);
+      }, 3200);
+      return () => clearInterval(t);
+  }, []);
+  ```
+  
+  *After/Fix:*
+  ```javascript
+  useEffect(() => {
+      let timeoutId;
+      const t = setInterval(() => {
+          setPromoVisible(false);
+          timeoutId = setTimeout(() => {
+              setPromoIdx(i => (i + 1) % PROMOS.length);
+              setPromoVisible(true);
+          }, 350);
+      }, 3200);
+      
+      return () => {
+          clearInterval(t);
+          if (timeoutId) clearTimeout(timeoutId);
+      };
+  }, []);
+  ```
+
+================================================================================
+                         SUMMARY OF ACTIONABLE CHANGES
+================================================================================
+If you would like me to apply these fixes to the project files, please let me know. 
+I can proceed with updating:
+1. `backend/src/queues/emailQueue.js` (Redis error handler)
+2. `backend/src/queues/emailWorker.js` (Redis error handler)
+3. `backend/src/controllers/userController.js` (Fix developer OTP endpoint)
+4. `backend/resetProducts.js` (Clear paginated product cache on reset)
+5. `frontend/src/components/Navbar.jsx` (Fix uncleaned state timeout)
+6. `backend/src/controllers/orderController.js` (Implement delayed BullMQ jobs for status transitions)

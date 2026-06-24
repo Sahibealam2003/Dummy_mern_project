@@ -8,6 +8,10 @@ const connection = new IORedis({
     maxRetriesPerRequest: null 
 });
 
+connection.on("error", (err) => {
+    console.error("Redis Connection Error in Email Queue:", err);
+});
+
 
 export const emailQueue = new Queue("EmailQueue", { connection });
 

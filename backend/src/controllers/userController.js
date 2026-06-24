@@ -7,7 +7,7 @@ import redis from "../config/redis.js"
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
-const tempUsers = new Map();
+
 
 export const signup = async (req, res) => {
 
@@ -408,14 +408,28 @@ export const logout = async (req, res) => {
     }
 };
 
-export const getTempUsers = (req, res) => {
-    const list = Array.from(tempUsers.entries()).map(([email, data]) => ({
-        email,
-        otp: data.otp,
-        expireAt: data.expireAt
-    }));
-    res.json(list);
-}
+export const getTempUsers = async (req, res) => {
+    try {
+        const keys = await redis.keys("temp_user:*");
+        const list = [];
+        
+        for (const key of keys) {
+            const data = await redis.get(key);
+            if (data) {
+                const parsed = JSON.parse(data);
+                list.push({
+                    email: parsed.email,
+                    otp: parsed.otp,
+                    expireAt: parsed.expireAt
+                });
+            }
+        }
+        res.json(list);
+    } catch (error) {
+        console.error("Error fetching temp users from Redis:", error);
+        res.status(500).json({ error: "Failed to retrieve test OTPs" });
+    }
+};
 
 export const updateProfile = async (req, res) => {
     try {

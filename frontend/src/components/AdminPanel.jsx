@@ -13,8 +13,8 @@ import {
     getAllOrders,
     updateOrderStatus
 } from "../services/api";
-import { AppShell } from "./app-shell";
 import { Dashboard } from "./dashboard";
+import { AppShell } from "./app-shell";
 
 const AdminPanel = () => {
     const navigate = useNavigate();

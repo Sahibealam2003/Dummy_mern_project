@@ -40,9 +40,8 @@ export const getCart = async (req, res) => {
     }
 };
 
-// @desc    Add item to cart
-// @route   POST /api/cart
-// @access  Private
+// Add item to cart
+
 export const addToCart = async (req, res) => {
     try {
         if (req.user.role === "admin") {
@@ -87,9 +86,7 @@ export const addToCart = async (req, res) => {
     }
 };
 
-// @desc    Update cart item quantity
-// @route   PUT /api/cart
-// @access  Private
+// Update cart item quantity
 export const updateCartItem = async (req, res) => {
     try {
         if (req.user.role === "admin") {
@@ -131,9 +128,8 @@ export const updateCartItem = async (req, res) => {
     }
 };
 
-// @desc    Remove item from cart
-// @route   DELETE /api/cart/:productId
-// @access  Private
+//Remove item from cart
+
 export const removeFromCart = async (req, res) => {
     try {
         if (req.user.role === "admin") {
@@ -165,9 +161,8 @@ export const removeFromCart = async (req, res) => {
     }
 };
 
-// @desc    Clear user cart
-// @route   DELETE /api/cart
-// @access  Private
+// Clear user cart
+
 export const clearCart = async (req, res) => {
     try {
         if (req.user.role === "admin") {

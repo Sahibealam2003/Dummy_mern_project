@@ -1,5 +1,6 @@
 import Product from "../models/productModel.js";
 import redis from "../config/redis.js";
+import { dummyProducts } from "../utils/dummyProducts.js";
 
 // Cache clearing helper for products
 const clearProductsCache = async (productId = null) => {
@@ -263,23 +264,9 @@ export const seedProducts = async () => {
     try {
         const count = await Product.countDocuments();
         if (count === 0) {
-            console.log("No products found in DB. Seeding from Fakestore API...");
-            const response = await fetch("https://fakestoreapi.com/products");
-            if (response.ok) {
-                const apiProducts = await response.json();
-                const mappedProducts = apiProducts.map(p => ({
-                    title: p.title,
-                    price: p.price,
-                    description: p.description,
-                    category: p.category,
-                    image: p.image,
-                    rating: p.rating || { rate: 4.0, count: 10 }
-                }));
-                await Product.insertMany(mappedProducts);
-                console.log(`Successfully seeded ${mappedProducts.length} products to MongoDB.`);
-            } else {
-                console.error("Failed to fetch products from Fakestore API for seeding.");
-            }
+            console.log("No products found in DB. Seeding 50 premium dummy products...");
+            await Product.insertMany(dummyProducts);
+            console.log(`Successfully seeded ${dummyProducts.length} products to MongoDB.`);
         } else {
             console.log(`Database already has ${count} products. Seeding skipped.`);
         }

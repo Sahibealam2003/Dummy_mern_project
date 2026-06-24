@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { getMyOrders } from "../services/api";
+import { cancelOrderApi, getMyOrders } from "../services/api";
 import { generateInvoice } from "../utils/generateInvoice";
 
 const OrderHistory = () => {
@@ -31,6 +31,25 @@ const OrderHistory = () => {
 
         fetchOrders();
     }, [isLoggedIn, navigate]);
+
+    const handleCancelOrder = async (orderId) => {
+        const confirmCancel = window.confirm("Are you sure you want to cancel this order?");
+        if (!confirmCancel) return;
+
+        try {
+            const data = await cancelOrderApi(orderId);
+            if (data.success) {
+                setOrders((prevOrders) =>
+                    prevOrders.map((order) =>
+                        order._id === orderId ? { ...order, orderStatus: "Cancelled" } : order
+                    )
+                );
+            }
+        } catch (err) {
+            console.error("Failed to cancel order:", err);
+            alert(err.response?.data?.error || "Failed to cancel order");
+        }
+    };
 
     // Return badge style based on order status
     const getStatusStyle = (status) => {
@@ -80,14 +99,14 @@ const OrderHistory = () => {
         );
     }
 
-    const uniqueCategories = ["All", ...new Set(orders.flatMap(order => 
+    const uniqueCategories = ["All", ...new Set(orders.flatMap(order =>
         order.orderItems.map(item => item.product?.category).filter(Boolean)
     ))];
 
     const filteredOrders = orders.filter((order) => {
         const query = searchQuery.toLowerCase();
         const matchId = order.orderNumber?.toLowerCase().includes(query);
-        const matchCategory = selectedCategory === "All" || order.orderItems?.some(item => 
+        const matchCategory = selectedCategory === "All" || order.orderItems?.some(item =>
             item.product?.category === selectedCategory
         );
         return matchId && matchCategory;
@@ -196,14 +215,23 @@ const OrderHistory = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
+                                        {order.orderStatus !== "Shipped" && order.orderStatus !== "Delivered" && order.orderStatus !== "Cancelled" &&
+                                            (
+                                                <button
+                                                    className="bg-red-400 border border-red-500 cursor-pointer py-2 px-1 rounded-sm text-xs "
+                                                    onClick={() => handleCancelOrder(order._id)}
+                                                >
+                                                    Cancel Order
+                                                </button>
+
+                                            )}
                                         <button
                                             onClick={() => generateInvoice(order)}
                                             disabled={order.orderStatus !== "Delivered" && order.orderStatus !== "Cancelled"}
-                                            className={`flex h-8 w-8 items-center justify-center rounded-lg border bg-white shrink-0 transition-all ${
-                                                order.orderStatus === "Delivered" || order.orderStatus === "Cancelled"
-                                                    ? "border-[#ede8e2] text-[#8c7e74] hover:border-[#e8622a] hover:text-[#e8622a] hover:bg-[#fff3ed] active:scale-95 cursor-pointer"
-                                                    : "border-[#ede8e2] text-[#d1ccc7] opacity-50 cursor-not-allowed"
-                                            }`}
+                                            className={`flex h-8 w-8 items-center justify-center rounded-lg border bg-white shrink-0 transition-all ${order.orderStatus === "Delivered" || order.orderStatus === "Cancelled"
+                                                ? "border-[#ede8e2] text-[#8c7e74] hover:border-[#e8622a] hover:text-[#e8622a] hover:bg-[#fff3ed] active:scale-95 cursor-pointer"
+                                                : "border-[#ede8e2] text-[#d1ccc7] opacity-50 cursor-not-allowed"
+                                                }`}
                                             title={order.orderStatus === "Delivered" || order.orderStatus === "Cancelled" ? "Download Invoice PDF" : "Invoice available upon delivery or cancellation"}
                                         >
                                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -244,7 +272,7 @@ const OrderHistory = () => {
                                 <div className="border-t border-[#f5f3ef] bg-[#fdfbf9] px-5 py-5 text-[10px]">
                                     <div className="relative mb-2">
                                         {/* Background track */}
-                                        <div className="absolute top-1/2 left-0 h-1 w-full -translate-y-1/2 bg-[#ede8e2] rounded-full" />
+                                        <div className={`${order.orderStatus === "Cancelled" ? "absolute top-1/2 left-0 h-1 w-full -translate-y-1/2 bg-red-600 rounded-full" : "absolute top-1/2 left-0 h-1 w-full -translate-y-1/2 bg-[#ede8e2] rounded-full"}`} />
                                         {/* Active track */}
                                         <div
                                             className={`absolute top-1/2 left-0 h-1 -translate-y-1/2 bg-gradient-to-r from-[#e8622a] to-[#c44e1e] rounded-full transition-all duration-500 ${getStatusProgressWidth(
@@ -261,12 +289,15 @@ const OrderHistory = () => {
                                                 return (
                                                     <div key={st} className="flex flex-col items-center">
                                                         <div
-                                                            className={`flex h-4 w-4 items-center justify-center rounded-full border-2 transition-all duration-300 bg-white ${
-                                                                isCompleted
-                                                                    ? "border-[#e8622a] text-[#e8622a] scale-110"
-                                                                    : "border-[#ede8e2]"
-                                                            }`}
-                                                        >
+                                                            className={`flex h-4 w-4 items-center justify-center rounded-lg border-2 transition-all duration-300 bg-white ${isCompleted
+                                                                ? "border-[#e8622a] text-[#e8622a] scale-110"
+                                                                : "border-[#ede8e2]"
+                                                                }`}
+                                                        >   {order.orderStatus === "Cancelled" && (
+                                                            <div className="h-25px w-25px rounded-full bg-red-600" >
+                                                                <svg width="20px" height="20px" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 8L8 16M8.00001 8L16 16" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                                                            </div>
+                                                        )}
                                                             {isCompleted && (
                                                                 <div className="h-1.5 w-1.5 rounded-full bg-[#e8622a]" />
                                                             )}

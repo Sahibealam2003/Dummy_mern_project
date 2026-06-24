@@ -100,3 +100,9 @@ export const clearCartApi = async () => {
     const response = await API.delete("/cart");
     return response.data;
 };
+
+export const cancelOrderApi = async (id) => {
+    const response = await API.put(`/orders/${id}/cancel`);
+    return response.data;
+};
+    

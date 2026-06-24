@@ -1,5 +1,6 @@
 import Order from "../models/orderModel.js";
-import { addEmailToQueue } from "../queues/emailQueue.js";
+import { addEmailToQueue, emailQueue } from "../queues/emailQueue.js";
+import { addOrderTransitionToQueue } from "../queues/orderQueue.js";
 import Cart from "../models/cartModel.js";
 
 //Create new order
@@ -146,44 +147,12 @@ export const updateOrderStatus = async (req, res) => {
         await order.save();
 
         if (status === "Processing") {
-            const orderId = order._id;
-            const orderNumber = order.orderNumber;
-            setTimeout(async () => {
-                try {
-                    let foundOrder = await Order.findById(orderId).populate("user", "name email");
-                    // 1. Move to Shipped
-                    if (foundOrder && foundOrder.orderStatus === "Processing") {
-                        foundOrder.orderStatus = "Shipped";
-                        await foundOrder.save();
-                        console.log(`[Auto-Delivery] Order ${orderNumber} automatically marked as Shipped.`);
-
-                        // 2. Set another timeout to move to Delivered
-                        setTimeout(async () => {
-                            try {
-                                foundOrder = await Order.findById(orderId).populate("user", "name email");
-                                if (foundOrder && foundOrder.orderStatus === "Shipped") {
-                                    foundOrder.orderStatus = "Delivered";
-                                    await foundOrder.save();
-                                    console.log(`[Auto-Delivery] Order ${orderNumber} automatically marked as Delivered.`);
-
-                                    const emailMessage = `Hi ${foundOrder.user?.name || "Customer"},\n\nGood news! Your order ${orderNumber} has been delivered successfully.\n\nThank you for shopping with SHOPx!\n\nBest regards,\nSHOPx Support Team`;
-                                    
-                                    await addEmailToQueue({
-                                        email: foundOrder.user?.email,
-                                        subject: `Order Delivered - ${orderNumber}`,
-                                        message: emailMessage
-                                    });
-                                    console.log(`[Auto-Delivery] Delivery email enqueued for ${foundOrder.user?.email}`);
-                                }
-                            } catch (err2) {
-                                console.error(`[Auto-Delivery Error] Failed during Delivered phase for order ${orderNumber}:`, err2);
-                            }
-                        }, 1 * 60 * 1000);
-                    }
-                } catch (err) {
-                    console.error(`[Auto-Delivery Error] Failed during Shipped phase for order ${orderNumber}:`, err);
-                }
-            }, 1 * 60 * 1000);
+            try {
+                await addOrderTransitionToQueue(order._id, "Shipped", 1 * 60 * 1000);
+                console.log(`[Queue-Delivery] Order ${order.orderNumber} status transition to Shipped enqueued.`);
+            } catch (queueErr) {
+                console.error(`[Queue-Delivery Error] Failed to enqueue transition for order ${order.orderNumber}:`, queueErr);
+            }
         }
 
         res.status(200).json({
@@ -196,3 +165,35 @@ export const updateOrderStatus = async (req, res) => {
         res.status(500).json({ error: "Failed to update order status" });
     }
 };
+
+//Cancel Order
+export const cancelOrder = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id).populate("user", "name email")
+        if (!order) {
+            return res.status(404).json({ error: "Order not found" })
+        }
+        if (order.user._id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: "You cannot cancel this order" })
+        }
+        if (order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') {
+            return res.status(400).json({ error: "you cannot cancel this order as its already shipped or delivered" })
+        }
+        order.orderStatus = 'Cancelled'
+        await order.save()
+
+        await addEmailToQueue({
+            email: order.user.email,
+            subject: `order number ${order.orderNumber} has been cancelled`,
+            message: `Hi ${order.user.name},
+            Your order ${order.orderNumber} has been cancelled successfully.
+            Thank you for shopping with SHOPx.
+            Best Regards,
+            SHOPx Support Team`
+        })
+        return res.status(200).json({ success: true, message: "Order cancelled successfully", order })
+    } catch (error) {
+        console.error("Error cancelling order:", error);
+        res.status(500).json({ error: "Failed to cancel order" });
+    }
+}

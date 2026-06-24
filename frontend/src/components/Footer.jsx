@@ -95,7 +95,9 @@ const Footer = () => {
         }, 3000);
     };
     return (
-        <footer className="relative mt-24 border-t border-[#ede8e2] bg-[#fdfbf9]">
+        <>
+        <hr className="h-0.5 w-[80%] mx-auto text-white bg-[#E35F28]"/>
+        <footer className="relative border-t border-[#ede8e2] bg-[#fdfbf9]">
             {/* Top glow line */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-2/3 bg-gradient-to-r from-transparent via-[#e8622a]/30 to-transparent" />
 
@@ -257,6 +259,7 @@ const Footer = () => {
                 </div>
             </div>
         </footer>
+        </>
     );
 };
 

@@ -1,7 +1,8 @@
-import mongoose from "mongoose";
+ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Product from "./src/models/productModel.js";
 import redis from "./src/config/redis.js";
+import { dummyProducts } from "./src/utils/dummyProducts.js";
 
 dotenv.config();
 
@@ -24,28 +25,20 @@ const resetProducts = async () => {
                 await redis.del(productKeys);
                 console.log(`Deleted product keys from Redis: ${productKeys.join(", ")}`);
             }
+            
+            const productsListKeys = await redis.keys("products:*");
+            if (productsListKeys && productsListKeys.length > 0) {
+                await redis.del(productsListKeys);
+                console.log(`Deleted products list keys from Redis: ${productsListKeys.join(", ")}`);
+            }
         } catch (redisKeysError) {
             console.error("Error clearing specific product keys from Redis:", redisKeysError);
         }
         console.log("Redis cache cleared.");
 
-        console.log("Seeding products from Fakestore API...");
-        const response = await fetch("https://fakestoreapi.com/products");
-        if (response.ok) {
-            const apiProducts = await response.json();
-            const mappedProducts = apiProducts.map(p => ({
-                title: p.title,
-                price: p.price,
-                description: p.description,
-                category: p.category,
-                image: p.image,
-                rating: p.rating || { rate: 4.0, count: 10 }
-            }));
-            await Product.insertMany(mappedProducts);
-            console.log(`Successfully seeded ${mappedProducts.length} products to MongoDB.`);
-        } else {
-            console.error("Failed to fetch products from Fakestore API.");
-        }
+        console.log("Seeding 50 premium dummy products...");
+        await Product.insertMany(dummyProducts);
+        console.log(`Successfully seeded ${dummyProducts.length} products to MongoDB.`);
 
     } catch (error) {
         console.error("Error resetting products:", error);

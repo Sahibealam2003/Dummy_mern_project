@@ -25,9 +25,10 @@ export const createOrder = async (req, res) => {
             orderItems,
             shippingAddress,
             paymentInfo: {
-                status: paymentInfo?.status || "Paid",
+                status: paymentInfo?.status || "Pending",
                 cardLastFour: paymentInfo?.cardLastFour || "••••",
-                paymentMethod: paymentInfo?.paymentMethod || "Card"
+                paymentMethod: paymentInfo?.paymentMethod || "Card",
+                paymentMode: paymentInfo?.paymentMode || "Online"
             },
             totalPrice: Number(totalPrice),
             shippingPrice: Number(shippingPrice || 0.0),
@@ -52,13 +53,22 @@ export const createOrder = async (req, res) => {
             const subtotal = orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             const tax = subtotal * 0.1;
             const shipPrice = Number(shippingPrice || 0.0);
-
-            const emailMessage = `Hi ${req.user.name},\n\nThank you for shopping with SHOPx! Your order has been placed successfully.\n\nOrder Details:\nOrder ID: ${orderNumber}\nSubtotal: $${subtotal.toFixed(2)}\nShipping: ${shipPrice > 0 ? `$${shipPrice.toFixed(2)}` : "FREE"}\nTax (10%): $${tax.toFixed(2)}\nTotal Price: $${Number(totalPrice).toFixed(2)}\nEstimated Delivery: 3 to 5 business days\n\nItems Purchased:\n${itemsListText}\n\nShipping Destination:\n${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.zip}\n\nWe will update you as soon as your order has been shipped.\n\nBest regards,\nSHOPx Support Team`;
+            const paymentDetails = `${paymentInfo?.paymentMethod || "Card"} (${paymentInfo?.paymentMode || "Online"})`;
+            const emailMessage = `Hi ${req.user.name},\n\nThank you for shopping with SHOPx! Your order has been placed successfully.\n\nOrder Details:\nOrder ID: ${orderNumber}\nSubtotal: $${subtotal.toFixed(2)}\nShipping: ${shipPrice > 0 ? `$${shipPrice.toFixed(2)}` : "FREE"}\nTax (10%): $${tax.toFixed(2)}\nTotal Price: $${Number(totalPrice).toFixed(2)}\nPayment Method: ${paymentDetails}\nEstimated Delivery: 3 to 5 business days\n\nItems Purchased:\n${itemsListText}\n\nShipping Destination:\n${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.zip}\n\nWe will update you as soon as your order has been shipped.\n\nBest regards,\nSHOPx Support Team`;
 
             await addEmailToQueue({
                 email: req.user.email,
                 subject: `Order Confirmation - ${orderNumber}`,
-                message: emailMessage
+                message: `Hi ${req.user.name},
+    Thank you for shopping with SHOPx!
+    Order Details:
+    Order ID: ${orderNumber}
+    Payment: ${paymentDetails}
+    Total Price: $${Number(totalPrice).toFixed(2)}
+    Items Purchased:
+    ${itemsListText}
+    Thank you,
+    SHOPx Support Team`
             });
             console.log(`Order confirmation email queued for ${req.user.email}`);
         } catch (emailError) {
@@ -187,6 +197,10 @@ export const cancelOrder = async (req, res) => {
             subject: `order number ${order.orderNumber} has been cancelled`,
             message: `Hi ${order.user.name},
             Your order ${order.orderNumber} has been cancelled successfully.
+            Payment Method:
+            ${order.paymentInfo.paymentMethod}
+            Payment Mode:
+            ${order.paymentInfo.paymentMode}
             Thank you for shopping with SHOPx.
             Best Regards,
             SHOPx Support Team`

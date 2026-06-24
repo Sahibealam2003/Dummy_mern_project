@@ -44,20 +44,25 @@ const orderSchema = new mongoose.Schema({
             required: true
         }
     },
-    paymentInfo: {
-        status: {
-            type: String,
-            default: "Pending"
-        },
-        cardLastFour: {
-            type: String,
-            default: "••••"
-        },
-        paymentMethod: {
-            type: String,
-            default: "Card"
-        }
+ paymentInfo: {
+    status: {
+        type: String,
+        default: "Pending"
     },
+    cardLastFour: {
+        type: String,
+        default: "••••"
+    },
+    paymentMethod: {
+        type: String,
+        default: "Card" 
+    },
+    paymentMode: { 
+        type: String,
+        enum: ["Online", "Offline"],
+        default: "Online"
+    }
+},
     totalPrice: {
         type: Number,
         required: true,

@@ -10,6 +10,7 @@ const OrderHistory = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [loading, setLoading] = useState(true);
+    const[isOpen,setIsOpen] = useState(false)
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -33,8 +34,7 @@ const OrderHistory = () => {
     }, [isLoggedIn, navigate]);
 
     const handleCancelOrder = async (orderId) => {
-        const confirmCancel = window.confirm("Are you sure you want to cancel this order?");
-        if (!confirmCancel) return;
+        setIsOpen(true)
 
         try {
             const data = await cancelOrderApi(orderId);
@@ -213,31 +213,36 @@ const OrderHistory = () => {
                                                 {order.shippingAddress?.city}
                                             </span>
                                         </div>
+                                        
                                     </div>
                                     <div className="flex items-center gap-3">
                                         {order.orderStatus !== "Shipped" && order.orderStatus !== "Delivered" && order.orderStatus !== "Cancelled" &&
                                             (
                                                 <button
-                                                    className="bg-red-400 border border-red-500 cursor-pointer py-2 px-1 rounded-sm text-xs "
-                                                    onClick={() => handleCancelOrder(order._id)}
+                                                    className="bg-red-700 border text-white border-red-100 cursor-pointer py-2 px-1.5 rounded-sm text-[15px] font-semibold "
+                                                    onClick={() => {
+                                                        handleCancelOrder(order._id)
+                                                    }}
                                                 >
                                                     Cancel Order
                                                 </button>
 
                                             )}
-                                        <button
-                                            onClick={() => generateInvoice(order)}
-                                            disabled={order.orderStatus !== "Delivered" && order.orderStatus !== "Cancelled"}
-                                            className={`flex h-8 w-8 items-center justify-center rounded-lg border bg-white shrink-0 transition-all ${order.orderStatus === "Delivered" || order.orderStatus === "Cancelled"
-                                                ? "border-[#ede8e2] text-[#8c7e74] hover:border-[#e8622a] hover:text-[#e8622a] hover:bg-[#fff3ed] active:scale-95 cursor-pointer"
-                                                : "border-[#ede8e2] text-[#d1ccc7] opacity-50 cursor-not-allowed"
-                                                }`}
-                                            title={order.orderStatus === "Delivered" || order.orderStatus === "Cancelled" ? "Download Invoice PDF" : "Invoice available upon delivery or cancellation"}
-                                        >
-                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                            </svg>
-                                        </button>
+                                        {order.orderStatus == "Delivered" && (
+                                            <button
+                                                onClick={() => generateInvoice(order)}
+                                                disabled={order.orderStatus !== "Delivered" && order.orderStatus !== "Cancelled"}
+                                                className={`flex h-8 w-8 items-center justify-center rounded-lg border bg-white shrink-0 transition-all ${order.orderStatus === "Delivered" || order.orderStatus === "Cancelled"
+                                                    ? "border-[#ede8e2] text-[#8c7e74] hover:border-[#e8622a] hover:text-[#e8622a] hover:bg-[#fff3ed] active:scale-95 cursor-pointer"
+                                                    : "border-[#ede8e2] text-[#d1ccc7] opacity-50 cursor-not-allowed"
+                                                    }`}
+                                                title={order.orderStatus === "Delivered" || order.orderStatus === "Cancelled" ? "Download Invoice PDF" : "Invoice available upon delivery or cancellation"}
+                                            >
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg>
+                                            </button>
+                                        )}
                                         <div className="text-right shrink-0">
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c7e74] block mb-0.5">Total Paid</span>
                                             <span className="font-extrabold text-[#e8622a] text-sm">${order.totalPrice.toFixed(2)}</span>

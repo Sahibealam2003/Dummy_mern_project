@@ -19,6 +19,8 @@ import ResetPassword from "./components/ResetPassword";
 import DummyPage from "./components/DummyPage";
 import AdminPanel from "./components/AdminPanel";
 
+
+
 function AppContent({ isCartOpen, setIsCartOpen }) {
   const dispatch = useDispatch();
   const location = useLocation();
@@ -67,6 +69,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/orders" element={<OrderHistory />} />
           <Route path="/wishlist" element={<Wishlist />} />
+ 
           <Route 
             path="/checkout" 
             element={

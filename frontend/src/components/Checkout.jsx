@@ -20,7 +20,15 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     const [name, setName] = useState(user?.name || "");
     const [email, setEmail] = useState(user?.email || "");
     const [address, setAddress] = useState("");
-    
+    const [paymentMode, setPaymentMode] = useState("Online");
+    const [paymentMethod, setPaymentMethod] = useState("Card");
+    const [upiId, setUpiId] = useState("");
+    const handleUseDefaultAddress = () => {
+        setAddress("near Mawana Meerut");
+        setCity("India");
+        setZip("123456");
+    };
+    // Special Offers state
     // Special Offers state
     const [offers, setOffers] = useState([]);
     const [city, setCity] = useState("");
@@ -29,7 +37,7 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     const [cardNumber, setCardNumber] = useState("");
     const [cardExpiry, setCardExpiry] = useState("");
     const [cardCvv, setCardCvv] = useState("");
-
+    const [loading,setLoading] = useState(false);
     // Promo code state
     const [promoInput, setPromoInput] = useState("");
     const [promoApplied, setPromoApplied] = useState(false);
@@ -114,9 +122,9 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                         <svg className="h-10 w-10 text-emerald-600 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="absolute -top-2 -left-2 animate-bounce" style={{ animationDelay: "0.1s" }}><svg className="h-6 w-6 text-[#e8622a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></span>
-                        <span className="absolute -bottom-2 -right-2 animate-bounce" style={{ animationDelay: "0.4s" }}><svg className="h-6 w-6 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></span>
-                        <span className="absolute -top-1 -right-3 animate-bounce" style={{ animationDelay: "0.2s" }}><svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></span>
+                        <span className="absolute -top-2 -left-2 animate-bounce" style={{ animationDelay: "0.1s" }}><svg className="h-6 w-6 text-[#e8622a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg></span>
+                        <span className="absolute -bottom-2 -right-2 animate-bounce" style={{ animationDelay: "0.4s" }}><svg className="h-6 w-6 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg></span>
+                        <span className="absolute -top-1 -right-3 animate-bounce" style={{ animationDelay: "0.2s" }}><svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></span>
                     </div>
 
                     <h1 className="text-3xl font-black tracking-tight text-[#2c2420]">
@@ -179,9 +187,28 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                             <div>
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c7e74] block mb-0.5">Payment Method</span>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-base"><svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></span>
-                                    <span className="font-mono text-[#2c2420] font-semibold">
-                                        Card ending in •••• {orderSummarySnapshot.cardLastFour}
+                                    <span className="text-base">
+                                        {orderSummarySnapshot.paymentMode === "Offline" ? (
+                                            <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                        ) : orderSummarySnapshot.paymentMethod === "UPI" ? (
+                                            <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                        )}
+                                    </span>
+                                    <span className="font-semibold text-[#2c2420]">
+                                        {orderSummarySnapshot.paymentMode === "Offline" ? (
+                                            "Cash on Delivery (COD)"
+                                        ) : orderSummarySnapshot.paymentMethod === "UPI" ? (
+                                            `UPI (ID: ${orderSummarySnapshot.upiId || "Saved UPI"})`
+                                        ) : (
+                                            `Card ending in •••• ${orderSummarySnapshot.cardLastFour}`
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -287,7 +314,7 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     const isFreeShipPromoActive = promoApplied && appliedPromoCode === "FREESHIP" && totalPrice >= 25;
     const shipping = (totalPrice >= 49 || isFreeShipPromoActive) ? 0.0 : 5.99;
     const tax = totalPrice * 0.1;
-    
+
     const promoDiscount = promoApplied ? totalPrice * appliedDiscountPct : 0.0;
     const finalTotal = totalPrice + tax + shipping - promoDiscount;
 
@@ -321,7 +348,25 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
         e.preventDefault();
         setStep("processing");
 
-        const cardLastFour = cardNumber.replace(/\s/g, "").slice(-4) || "••••";
+        // Payment logic variables define karein
+        let cardLastFour = "••••";
+        let status = "Pending";
+        let finalPaymentMethod = paymentMethod;
+
+        if (paymentMode === "Offline") {
+            finalPaymentMethod = "Cash on Delivery";
+            cardLastFour = "COD";
+            status = "Pending"; // Delivery par pay hoga isliye status Pending rahega
+        } else {
+            // Online Case
+            if (paymentMethod === "Card") {
+                cardLastFour = cardNumber.replace(/\s/g, "").slice(-4) || "••••";
+                status = "Paid"; // Simulated online payment successful
+            } else if (paymentMethod === "UPI") {
+                cardLastFour = "UPI";
+                status = "Paid"; // Simulated online payment successful
+            }
+        }
 
         // Map cart items to the database structure
         const mappedItems = cartItems.map((item) => ({
@@ -345,6 +390,9 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
             address: address,
             city: city,
             zip: zip,
+            paymentMode: paymentMode,
+            paymentMethod: finalPaymentMethod,
+            upiId: paymentMethod === "UPI" ? upiId : "",
             cardLastFour
         };
         setOrderSummarySnapshot(snapshot);
@@ -358,268 +406,382 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                     zip
                 },
                 paymentInfo: {
-                    status: "Paid",
+                    status,
                     cardLastFour,
-                    paymentMethod: "Card"
+                    paymentMethod: finalPaymentMethod,
+                    paymentMode: paymentMode
                 },
                 totalPrice: finalTotal,
                 shippingPrice: shipping
             });
 
-            if (res.success) {
-                // Simulate a slight delay to feel natural/processing payment before success screen
-                setTimeout(() => {
-                    setCreatedOrder(res.order);
-                    setOrderNumber(res.order.orderNumber);
-                    setStep("success");
-                    dispatch(clearCart());
-                }, 1500);
-            } else {
-                setStep("form");
-                alert(res.error || "Failed to place order. Please try again.");
-            }
-        } catch (err) {
-            console.error("Checkout order placement error:", err);
+            // Use API response to set order details and move to success
+            setOrderNumber(res.order?.orderNumber || res.orderNumber || "N/A");
+            setCreatedOrder(res.order || res);
+            dispatch(clearCart());
+            setStep("success");
+        } catch (error) {
+            console.error("Order placement failed:", error);
             setStep("form");
-            alert(err.response?.data?.error || "Failed to place order. Please check details and try again.");
+            alert("Failed to place order. Please try again.");
+        } finally {
+            setTimeout(() => setLoading(false), 300); 
         }
     };
-
-    return (
-        <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
-            <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 animate-fade-in">
-                {/* Header */}
-                <div className="mb-6">
-                    <h2 className="text-xl font-bold text-[#2c2420]"><span className="inline-flex items-center gap-2"><svg className="h-5 w-5 text-[#e8622a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Secured Checkout</span></h2>
-                    <p className="text-sm text-[#8c7e74] mt-0.5">Please fill in your shipping and payment details.</p>
-                </div>
-
-                <div className="mb-6 h-px" style={{ background: "#ede8e2" }} />
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Form Details */}
-                    <form onSubmit={handlePlaceOrder} className="lg:col-span-7 space-y-6">
-                        {/* Shipping details */}
-                        <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 space-y-4 shadow-sm">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5 mb-1">
-                                <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="0" fill="none" width="24" height="24"/><g><path d="M18 8h-2V7c0-1.105-.895-2-2-2H4c-1.105 0-2 .895-2 2v10h2c0 1.657 1.343 3 3 3s3-1.343 3-3h4c0 1.657 1.343 3 3 3s3-1.343 3-3h2v-5l-4-4zM7 18.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5zM4 14V7h10v7H4zm13 4.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5z"/></g></svg> Shipping Information
-                            </h3>
-                            <div>
-                                <label className={LABEL_CLS}>Full Name</label>
-                                <input
-                                    className={FIELD_CLS}
-                                    type="text"
-                                    placeholder="Enter your full name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className={LABEL_CLS}>Email Address</label>
-                                <input
-                                    className={FIELD_CLS}
-                                    type="email"
-                                    placeholder="you@example.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className={LABEL_CLS}>Delivery Address</label>
-                                <input
-                                    className={FIELD_CLS}
-                                    type="text"
-                                    placeholder="Street Address, Apartment, Suite"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className={LABEL_CLS}>City</label>
-                                    <input
-                                        className={FIELD_CLS}
-                                        type="text"
-                                        placeholder="City Name"
-                                        value={city}
-                                        onChange={(e) => setCity(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className={LABEL_CLS}>ZIP / Postal Code</label>
-                                    <input
-                                        className={FIELD_CLS}
-                                        type="text"
-                                        placeholder="10001"
-                                        value={zip}
-                                        onChange={(e) => setZip(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            </div>
+            return (
+                <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
+                    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 animate-fade-in">
+                        {/* Header */}
+                        <div className="mb-6">
+                            <h2 className="text-xl font-bold text-[#2c2420]"><span className="inline-flex items-center gap-2"><svg className="h-5 w-5 text-[#e8622a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg> Secured Checkout</span></h2>
+                            <p className="text-sm text-[#8c7e74] mt-0.5">Please fill in your shipping and payment details.</p>
                         </div>
 
-                        {/* Payment details */}
+                        <div className="mb-6 h-px" style={{ background: "#ede8e2" }} />
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                            {/* Form Details */}
+                            <form onSubmit={handlePlaceOrder} className="lg:col-span-7 space-y-6">
+                                                    {/* Shipping details */}
                         <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 space-y-4 shadow-sm">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5 mb-1">
-                                <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-
-                                Payment Details
-                            </h3>
-                            <div>
-                                <label className={LABEL_CLS}>Cardholder Name</label>
-                                <input
-                                    className={FIELD_CLS}
-                                    type="text"
-                                    placeholder="Name as it appears on your card"
-                                    value={cardName}
-                                    onChange={(e) => setCardName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className={LABEL_CLS}>Card Number</label>
-                                <input
-                                    className={FIELD_CLS}
-                                    type="text"
-                                    placeholder="0000 0000 0000 0000"
-                                    value={cardNumber}
-                                    onChange={(e) => setCardNumber(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className={LABEL_CLS}>Expiration Date</label>
-                                    <input
-                                        className={FIELD_CLS}
-                                        type="text"
-                                        placeholder="MM/YY"
-                                        value={cardExpiry}
-                                        onChange={(e) => setCardExpiry(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className={LABEL_CLS}>CVV / CVC</label>
-                                    <input
-                                        className={FIELD_CLS}
-                                        type="text"
-                                        placeholder="123"
-                                        value={cardCvv}
-                                        onChange={(e) => setCardCvv(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <button
-                            type="submit"
-                            className="btn-glow flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#e8622a]/20 transition-all"
-                        >
-                            Place Order · ${finalTotal.toFixed(2)}
-                        </button>
-                    </form>
-
-                    {/* Order Summary */}
-                    <div className="lg:col-span-5 space-y-6">
-                        {/* Summary List */}
-                        <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 shadow-sm space-y-4">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5">
-                                <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="800px" height="800px" viewBox="-5.25 0 50 50" xmlns="http://www.w3.org/2000/svg"><g id="Group_19" data-name="Group 19" transform="translate(-1219.44 -717.022)"><path id="Path_50" data-name="Path 50" d="M1256.94,765.022h-35.5v-46h21.25l14.25,15.75Z" fill="#ffffff" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/><path id="Path_51" data-name="Path 51" d="M1241.69,720.022v14.75h14.25" fill="#d1d3d4" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/><line id="Line_28" data-name="Line 28" x2="20.75" transform="translate(1227.69 757.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/><line id="Line_29" data-name="Line 29" x2="10.75" transform="translate(1227.69 749.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/></g></svg> Order Summary
-                            </h3>
-
-                            {/* Items Scroll area */}
-                            <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-                                {cartItems.map((item) => (
-                                    <div key={item.id} className="flex gap-3 items-center text-xs">
-                                        <div className="h-12 w-12 rounded-lg border border-[#ede8e2] bg-white p-1 flex items-center justify-center shrink-0">
-                                            <img src={item.image} alt={item.title} className="max-h-full max-w-full object-contain" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-semibold text-[#2c2420] truncate">{item.title}</p>
-                                            <p className="text-[#8c7e74] mt-0.5">Qty: {item.quantity} · ${item.price.toFixed(2)} each</p>
-                                        </div>
-                                        <span className="font-bold text-[#2c2420] shrink-0">
-                                            ${(item.price * item.quantity).toFixed(2)}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="h-px bg-[#ede8e2] my-4" />
-
-                            {/* Apply Promo Form */}
-                            <form onSubmit={handleApplyPromo} className="flex gap-2">
-                                <input
-                                    type="text"
-                                    placeholder="Enter Promo Code(optional)"
-                                    className="flex-1 rounded-xl border border-[#ede8e2] bg-white px-3 py-2 text-xs text-[#2c2420] placeholder-[#bcae9e] outline-none"
-                                    value={promoInput}
-                                    onChange={(e) => setPromoInput(e.target.value)}
-                                    disabled={promoApplied}
-                                />
+                            <div className="flex justify-between items-center border-b border-[#f5f3ef] pb-2.5 mb-1">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] flex items-center">
+                                    <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="24px" height="24px" viewBox="0 0 24 24" xmlns="<http://www.w3.org/2000/svg>"><rect x="0" fill="none" width="24" height="24"/><g><path d="M18 8h-2V7c0-1.105-.895-2-2-2H4c-1.105 0-2 .895-2 2v10h2c0 1.657 1.343 3 3 3s3-1.343 3-3h4c0 1.657 1.343 3 3 3s3-1.343 3-3h2v-5l-4-4zM7 18.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5zM4 14V7h10v7H4zm13 4.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5z"/></g></svg> Shipping Information
+                                </h3>
                                 <button
-                                    type="submit"
-                                    className="rounded-xl bg-[#2c2420] px-4 py-2 text-xs font-bold text-white hover:bg-[#3d3028] disabled:opacity-50 cursor-pointer shrink-0"
-                                    disabled={promoApplied || !promoInput.trim()}
+                                    type="button"
+                                    onClick={handleUseDefaultAddress}
+                                    className="text-xs font-bold text-[#e8622a] hover:text-[#c44e1e] transition-colors flex items-center gap-1 cursor-pointer bg-[#e8622a]/10 px-3 py-1.5 rounded-xl hover:bg-[#e8622a]/20"
                                 >
-                                    Apply
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    Use Default Address
                                 </button>
-                            </form>
-                            {promoApplied && (
-                                <p className="text-[10px] font-bold text-emerald-600">✓ {appliedPromoCode} Code Applied ({appliedPromoDiscountText} Discount)!</p>
-                            )}
-                            {promoError && (
-                                <p className="text-[10px] font-bold text-rose-500">{promoError}</p>
-                            )}
-
-                            <div className="h-px bg-[#ede8e2] my-4" />
-
-                            {/* Price Breakdown */}
-                            <div className="space-y-2.5 text-xs text-[#8c7e74]">
-                                <div className="flex justify-between">
-                                    <span>Subtotal ({totalCount} item{totalCount !== 1 ? "s" : ""})</span>
-                                    <span className="font-semibold text-[#2c2420]">${totalPrice.toFixed(2)}</span>
+                            </div>
+                                    <div>
+                                        <label className={LABEL_CLS}>Full Name</label>
+                                        <input
+                                            className={FIELD_CLS}
+                                            type="text"
+                                            placeholder="Enter your full name"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={LABEL_CLS}>Email Address</label>
+                                        <input
+                                            className={FIELD_CLS}
+                                            type="email"
+                                            placeholder="you@example.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={LABEL_CLS}>Delivery Address</label>
+                                        <input
+                                            className={FIELD_CLS}
+                                            type="text"
+                                            placeholder="Street Address, Apartment, Suite"
+                                            value={address}
+                                            onChange={(e) => setAddress(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className={LABEL_CLS}>City</label>
+                                            <input
+                                                className={FIELD_CLS}
+                                                type="text"
+                                                placeholder="City Name"
+                                                value={city}
+                                                onChange={(e) => setCity(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={LABEL_CLS}>ZIP / Postal Code</label>
+                                            <input
+                                                className={FIELD_CLS}
+                                                type="text"
+                                                placeholder="10001"
+                                                value={zip}
+                                                onChange={(e) => setZip(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>Shipping</span>
-                                    {shipping === 0 ? (
-                                        <span className="font-bold text-[#2c7a4a]">Free</span>
-                                    ) : (
-                                        <span className="font-semibold text-[#2c2420]">${shipping.toFixed(2)}</span>
+
+                                                      {/* Payment details */}
+                        <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 space-y-5 shadow-sm">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5 mb-1">
+                                <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" xmlns="<http://www.w3.org/2000/svg>" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+                                Payment Mode & Details
+                            </h3>
+
+                            {/* Online / Offline Tabs */}
+                            <div>
+                                <label className={LABEL_CLS}>Select Payment Mode</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setPaymentMode("Online");
+                                            setPaymentMethod("Card"); // switch hone par Card method lagayein
+                                        }}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                                            paymentMode === "Online"
+                                                ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
+                                                : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
+                                        }`}
+                                    >
+                                        <svg className="w-6 h-6 mb-1.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h2a2.5 2.5 0 002.5-2.5V10a2 2 0 00-2-2h-1.07a2 2 0 01-1.414-.586l-2.828-2.828A2 2 0 009.586 4H8z" />
+                                        </svg>
+                                        <span className="text-xs uppercase tracking-wider">Online Payment</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setPaymentMode("Offline");
+                                            setPaymentMethod("Cash on Delivery");
+                                        }}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                                            paymentMode === "Offline"
+                                                ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
+                                                : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
+                                        }`}
+                                    >
+                                        <svg className="w-6 h-6 mb-1.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        <span className="text-xs uppercase tracking-wider">Offline (COD)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Conditional Forms base on Mode */}
+                            {paymentMode === "Online" ? (
+                                <div className="space-y-4 pt-2">
+                                    {/* Card vs UPI Selection */}
+                                    <div>
+                                        <label className={LABEL_CLS}>Online Payment Method</label>
+                                        <div className="flex gap-6">
+                                            <label className="flex items-center gap-2 text-sm text-[#2c2420] font-medium cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="onlineMethod"
+                                                    value="Card"
+                                                    checked={paymentMethod === "Card"}
+                                                    onChange={() => setPaymentMethod("Card")}
+                                                    className="w-4 h-4 text-[#e8622a] focus:ring-[#e8622a]"
+                                                />
+                                                Pay with Card
+                                            </label>
+                                            <label className="flex items-center gap-2 text-sm text-[#2c2420] font-medium cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="onlineMethod"
+                                                    value="UPI"
+                                                    checked={paymentMethod === "UPI"}
+                                                    onChange={() => setPaymentMethod("UPI")}
+                                                    className="w-4 h-4 text-[#e8622a] focus:ring-[#e8622a]"
+                                                />
+                                                Pay with UPI
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {/* Card Inputs render tab */}
+                                    {paymentMethod === "Card" && (
+                                        <div className="space-y-4 animate-fade-in">
+                                            <div>
+                                                <label className={LABEL_CLS}>Cardholder Name</label>
+                                                <input
+                                                    className={FIELD_CLS}
+                                                    type="text"
+                                                    placeholder="Name as it appears on your card"
+                                                    value={cardName}
+                                                    onChange={(e) => setCardName(e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={LABEL_CLS}>Card Number</label>
+                                                <input
+                                                    className={FIELD_CLS}
+                                                    type="text"
+                                                    placeholder="0000 0000 0000 0000"
+                                                    value={cardNumber}
+                                                    onChange={(e) => setCardNumber(e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className={LABEL_CLS}>Expiration Date</label>
+                                                    <input
+                                                        className={FIELD_CLS}
+                                                        type="text"
+                                                        placeholder="MM/YY"
+                                                        value={cardExpiry}
+                                                        onChange={(e) => setCardExpiry(e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className={LABEL_CLS}>CVV / CVC</label>
+                                                    <input
+                                                        className={FIELD_CLS}
+                                                        type="text"
+                                                        placeholder="123"
+                                                        value={cardCvv}
+                                                        onChange={(e) => setCardCvv(e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* UPI Input render tab */}
+                                    {paymentMethod === "UPI" && (
+                                        <div className="space-y-2 animate-fade-in">
+                                            <label className={LABEL_CLS}>UPI ID / VPA</label>
+                                            <input
+                                                className={FIELD_CLS}
+                                                type="text"
+                                                placeholder="username@bank or mobileNumber@upi"
+                                                value={upiId}
+                                                onChange={(e) => setUpiId(e.target.value)}
+                                                required
+                                            />
+                                            <p className="text-[10px] text-[#8c7e74]">Order click karne ke baad aapke mobile app par request aayegi.</p>
+                                        </div>
                                     )}
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>Tax (10%)</span>
-                                    <span className="font-semibold text-[#2c2420]">${tax.toFixed(2)}</span>
-                                </div>
-                                {promoApplied && (
-                                    <div className="flex justify-between text-emerald-600 font-medium">
-                                        <span>Promo Discount ({appliedPromoDiscountText})</span>
-                                        <span>-${promoDiscount.toFixed(2)}</span>
+                            ) : (
+                                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs flex items-start gap-2.5 animate-fade-in">
+                                    <svg className="w-4.5 h-4.5 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div>
+                                        <span className="font-bold block mb-0.5">Cash on Delivery (COD) Selected</span>
+                                        A ₹20 charge will be applied for Cash on Delivery orders.
                                     </div>
-                                )}
-                                <div className="h-px bg-gradient-to-r from-transparent via-[#ede8e2] to-transparent my-1" />
-                                <div className="flex items-center justify-between text-sm font-bold">
-                                    <span className="text-[#2c2420]">Total</span>
-                                    <span className="text-lg text-[#e8622a]">
-                                        ${finalTotal.toFixed(2)}
-                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                                {/* Action buttons */}
+                                <button
+                                    type="submit"
+                                    className="btn-glow flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#e8622a]/20 transition-all"
+                                >
+                                    Place Order · ${finalTotal.toFixed(2)}
+                                </button>
+                            </form>
+
+                            {/* Order Summary */}
+                            <div className="lg:col-span-5 space-y-6">
+                                {/* Summary List */}
+                                <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 shadow-sm space-y-4">
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5">
+                                        <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="800px" height="800px" viewBox="-5.25 0 50 50" xmlns="http://www.w3.org/2000/svg"><g id="Group_19" data-name="Group 19" transform="translate(-1219.44 -717.022)"><path id="Path_50" data-name="Path 50" d="M1256.94,765.022h-35.5v-46h21.25l14.25,15.75Z" fill="#ffffff" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><path id="Path_51" data-name="Path 51" d="M1241.69,720.022v14.75h14.25" fill="#d1d3d4" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><line id="Line_28" data-name="Line 28" x2="20.75" transform="translate(1227.69 757.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><line id="Line_29" data-name="Line 29" x2="10.75" transform="translate(1227.69 749.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /></g></svg> Order Summary
+                                    </h3>
+
+                                    {/* Items Scroll area */}
+                                    <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                                        {cartItems.map((item) => (
+                                            <div key={item.id} className="flex gap-3 items-center text-xs">
+                                                <div className="h-12 w-12 rounded-lg border border-[#ede8e2] bg-white p-1 flex items-center justify-center shrink-0">
+                                                    <img src={item.image} alt={item.title} className="max-h-full max-w-full object-contain" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-semibold text-[#2c2420] truncate">{item.title}</p>
+                                                    <p className="text-[#8c7e74] mt-0.5">Qty: {item.quantity} · ${item.price.toFixed(2)} each</p>
+                                                </div>
+                                                <span className="font-bold text-[#2c2420] shrink-0">
+                                                    ${(item.price * item.quantity).toFixed(2)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="h-px bg-[#ede8e2] my-4" />
+
+                                    {/* Apply Promo Form */}
+                                    <form onSubmit={handleApplyPromo} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter Promo Code(optional)"
+                                            className="flex-1 rounded-xl border border-[#ede8e2] bg-white px-3 py-2 text-xs text-[#2c2420] placeholder-[#bcae9e] outline-none"
+                                            value={promoInput}
+                                            onChange={(e) => setPromoInput(e.target.value)}
+                                            disabled={promoApplied}
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="rounded-xl bg-[#2c2420] px-4 py-2 text-xs font-bold text-white hover:bg-[#3d3028] disabled:opacity-50 cursor-pointer shrink-0"
+                                            disabled={promoApplied || !promoInput.trim()}
+                                        >
+                                            Apply
+                                        </button>
+                                    </form>
+                                    {promoApplied && (
+                                        <p className="text-[10px] font-bold text-emerald-600">✓ {appliedPromoCode} Code Applied ({appliedPromoDiscountText} Discount)!</p>
+                                    )}
+                                    {promoError && (
+                                        <p className="text-[10px] font-bold text-rose-500">{promoError}</p>
+                                    )}
+
+                                    <div className="h-px bg-[#ede8e2] my-4" />
+
+                                    {/* Price Breakdown */}
+                                    <div className="space-y-2.5 text-xs text-[#8c7e74]">
+                                        <div className="flex justify-between">
+                                            <span>Subtotal ({totalCount} item{totalCount !== 1 ? "s" : ""})</span>
+                                            <span className="font-semibold text-[#2c2420]">${totalPrice.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Shipping</span>
+                                            {shipping === 0 ? (
+                                                <span className="font-bold text-[#2c7a4a]">Free</span>
+                                            ) : (
+                                                <span className="font-semibold text-[#2c2420]">${shipping.toFixed(2)}</span>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Tax (10%)</span>
+                                            <span className="font-semibold text-[#2c2420]">${tax.toFixed(2)}</span>
+                                        </div>
+                                        {promoApplied && (
+                                            <div className="flex justify-between text-emerald-600 font-medium">
+                                                <span>Promo Discount ({appliedPromoDiscountText})</span>
+                                                <span>-${promoDiscount.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        <div className="h-px bg-gradient-to-r from-transparent via-[#ede8e2] to-transparent my-1" />
+                                        <div className="flex items-center justify-between text-sm font-bold">
+                                            <span className="text-[#2c2420]">Total</span>
+                                            <span className="text-lg text-[#e8622a]">
+                                                ${finalTotal.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    );
-};
+            );
+        };
 
-export default Checkout;
+        export default Checkout;

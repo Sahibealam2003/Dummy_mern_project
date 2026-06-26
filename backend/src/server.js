@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
@@ -11,9 +12,7 @@ import cartRoutes from "./routes/cartRoutes.js";
 import { seedProducts } from "./controllers/productController.js";
 import { seedSpecialOffers } from "./controllers/specialOfferController.js";
 import "./queues/emailWorker.js";
-import "./queues/orderWorker.js";
 
-dotenv.config();
 
 const app = express();
 

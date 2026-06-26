@@ -15,7 +15,6 @@ import Wishlist from "./components/Wishlist";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import ForgotPassword from "./components/ForgotPassword";
-import ResetPassword from "./components/ResetPassword";
 import DummyPage from "./components/DummyPage";
 import AdminPanel from "./components/AdminPanel";
 
@@ -38,7 +37,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
   }, [isLoggedIn, isAdmin, dispatch]);
 
   React.useEffect(() => {
-    const isSpecialPage = ["/checkout", "/login", "/signup", "/admin", "/forgot-password"].includes(location.pathname) || location.pathname.startsWith("/reset-password/");
+    const isSpecialPage = ["/checkout", "/login", "/signup", "/admin", "/forgot-password"].includes(location.pathname);
     setShowFooter(!isSpecialPage);
     setShowNavbar(location.pathname !== "/admin");
   }, [location.pathname]);
@@ -54,7 +53,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
       {/* Two-row navbar = 104px (64px top + 40px secondary) */}
       <main 
         className={isDealsPage ? "flex-1 flex items-center justify-center p-4" : "flex-1"} 
-        style={{ paddingTop: location.pathname === "/admin" ? 0 : (location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/forgot-password" || location.pathname.startsWith("/reset-password/")) ? 76 : 104 }}
+        style={{ paddingTop: location.pathname === "/admin" ? 0 : (location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/forgot-password") ? 76 : 104 }}
       >
         <Routes>
           <Route path="/" element={<ProductList />} />
@@ -65,7 +64,6 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/orders" element={<OrderHistory />} />
           <Route path="/wishlist" element={<Wishlist />} />

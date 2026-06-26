@@ -56,6 +56,8 @@ const OrderHistory = () => {
         switch (status) {
             case "Pending":
                 return "bg-amber-50 text-amber-700 border-amber-200/60";
+            case "Placed":
+                return "bg-indigo-50 text-indigo-700 border-indigo-200/60";
             case "Processing":
                 return "bg-blue-50 text-blue-700 border-blue-200/60";
             case "Shipped":
@@ -73,11 +75,13 @@ const OrderHistory = () => {
     const getStatusProgressWidth = (status) => {
         switch (status) {
             case "Pending":
-                return "w-1/4";
+                return "w-1/5";
+            case "Placed":
+                return "w-2/5";
             case "Processing":
-                return "w-2/4";
+                return "w-3/5";
             case "Shipped":
-                return "w-3/4";
+                return "w-4/5";
             case "Delivered":
                 return "w-full";
             default:
@@ -287,8 +291,8 @@ const OrderHistory = () => {
 
                                         {/* Steps */}
                                         <div className="relative flex justify-between">
-                                            {["Pending", "Processing", "Shipped", "Delivered"].map((st, i) => {
-                                                const statuses = ["Pending", "Processing", "Shipped", "Delivered"];
+                                            {["Pending", "Placed", "Processing", "Shipped", "Delivered"].map((st, i) => {
+                                                const statuses = ["Pending", "Placed", "Processing", "Shipped", "Delivered"];
                                                 const currentIdx = statuses.indexOf(order.orderStatus);
                                                 const isCompleted = i <= currentIdx;
                                                 return (
@@ -312,11 +316,12 @@ const OrderHistory = () => {
                                             })}
                                         </div>
                                     </div>
-                                    <div className="flex justify-between font-bold text-[#8c7e74] tracking-wider uppercase scale-95 origin-left">
-                                        <span className={order.orderStatus === "Pending" ? "text-[#e8622a]" : ""}>Placed</span>
-                                        <span className={order.orderStatus === "Processing" ? "text-[#e8622a]" : ""}>Processing</span>
-                                        <span className={order.orderStatus === "Shipped" ? "text-[#e8622a]" : ""}>Shipped</span>
-                                        <span className={order.orderStatus === "Delivered" ? "text-emerald-600" : ""}>Delivered</span>
+                                    <div className="flex justify-between font-bold text-[#8c7e74] tracking-wider uppercase scale-95 origin-left text-center">
+                                        <span className={`w-1/5 ${order.orderStatus === "Pending" ? "text-[#e8622a]" : ""}`}>Pending</span>
+                                        <span className={`w-1/5 ${order.orderStatus === "Placed" ? "text-[#e8622a]" : ""}`}>Placed</span>
+                                        <span className={`w-1/5 ${order.orderStatus === "Processing" ? "text-[#e8622a]" : ""}`}>Processing</span>
+                                        <span className={`w-1/5 ${order.orderStatus === "Shipped" ? "text-[#e8622a]" : ""}`}>Shipped</span>
+                                        <span className={`w-1/5 ${order.orderStatus === "Delivered" ? "text-emerald-600" : ""}`}>Delivered</span>
                                     </div>
                                 </div>
                             </div>

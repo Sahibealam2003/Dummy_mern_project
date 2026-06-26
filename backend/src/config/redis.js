@@ -1,17 +1,16 @@
-import IORedis from "ioredis";
+import Redis from "ioredis";
 
-const redis = new IORedis({
-    host: "127.0.0.1",
-    port: 6379
-});
+const redis = new Redis({
+    host: "localhost",
+    port: 6379,
+    maxRetriesPerRequest:null
 
-redis.on("connect",()=>{
-    console.log("Redis Connected");
 })
 
-redis.on("error",(err)=>{
-    console.log("Redis Error",err);
+redis.on("connect", () => {
+    console.log("Redis is connected");
 })
-
-
+redis.on("error", () => {
+    console.log("Redis is not connected");
+})
 export default redis;

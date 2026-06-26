@@ -1,7 +1,7 @@
 import Order from "../models/orderModel.js";
-import { addEmailToQueue, emailQueue } from "../queues/emailQueue.js";
-import { addOrderTransitionToQueue } from "../queues/orderQueue.js";
+import { emailQueue } from "../queues/emailQueue.js";
 import Cart from "../models/cartModel.js";
+import { tryCatch } from "bullmq";
 
 //Create new order
 
@@ -56,20 +56,20 @@ export const createOrder = async (req, res) => {
             const paymentDetails = `${paymentInfo?.paymentMethod || "Card"} (${paymentInfo?.paymentMode || "Online"})`;
             const emailMessage = `Hi ${req.user.name},\n\nThank you for shopping with SHOPx! Your order has been placed successfully.\n\nOrder Details:\nOrder ID: ${orderNumber}\nSubtotal: $${subtotal.toFixed(2)}\nShipping: ${shipPrice > 0 ? `$${shipPrice.toFixed(2)}` : "FREE"}\nTax (10%): $${tax.toFixed(2)}\nTotal Price: $${Number(totalPrice).toFixed(2)}\nPayment Method: ${paymentDetails}\nEstimated Delivery: 3 to 5 business days\n\nItems Purchased:\n${itemsListText}\n\nShipping Destination:\n${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.zip}\n\nWe will update you as soon as your order has been shipped.\n\nBest regards,\nSHOPx Support Team`;
 
-            await addEmailToQueue({
-                email: req.user.email,
-                subject: `Order Confirmation - ${orderNumber}`,
-                message: `Hi ${req.user.name},
-    Thank you for shopping with SHOPx!
-    Order Details:
-    Order ID: ${orderNumber}
-    Payment: ${paymentDetails}
-    Total Price: $${Number(totalPrice).toFixed(2)}
-    Items Purchased:
-    ${itemsListText}
-    Thank you,
-    SHOPx Support Team`
-            });
+            //         await addEmailToQueue({
+            //             email: req.user.email,
+            //             subject: `Order Confirmation - ${orderNumber}`,
+            //             message: `Hi ${req.user.name},
+            // Thank you for shopping with SHOPx!
+            // Order Details:
+            // Order ID: ${orderNumber}
+            // Payment: ${paymentDetails}
+            // Total Price: $${Number(totalPrice).toFixed(2)}
+            // Items Purchased:
+            // ${itemsListText}
+            // Thank you,
+            // SHOPx Support Team`
+            //         });
             console.log(`Order confirmation email queued for ${req.user.email}`);
         } catch (emailError) {
             console.error("Failed to queue order email:", emailError);
@@ -147,7 +147,7 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(400).json({ error: "Status field is required" });
         }
 
-        const order = await Order.findById(req.params.id);
+        const order = await Order.findById(req.params.id).populate("user", "name email");
 
         if (!order) {
             return res.status(404).json({ error: "Order not found" });
@@ -156,13 +156,93 @@ export const updateOrderStatus = async (req, res) => {
         order.orderStatus = status;
         await order.save();
 
-        if (status === "Processing") {
-            try {
-                await addOrderTransitionToQueue(order._id, "Shipped", 1 * 60 * 1000);
-                console.log(`[Queue-Delivery] Order ${order.orderNumber} status transition to Shipped enqueued.`);
-            } catch (queueErr) {
-                console.error(`[Queue-Delivery Error] Failed to enqueue transition for order ${order.orderNumber}:`, queueErr);
+        try {
+            switch (status) {
+                case "Processing":
+                    await emailQueue.add('sendEmail', {
+                        type: "PROCESSING_ORDER",
+                        data: {
+                            email: order.user.email,
+                            orderNumber: order.orderNumber,
+                            totalPrice: order.orderItems.totalPrice
+                        }
+                    })
+                    console.log("Processing email queued");
+                    break
+
+                case "Placed": await emailQueue.add('sendEmail', {
+                    type: "PLACED_ORDER",
+                    data: {
+                        email: order.user.email,
+                        customerName: order.user.name,
+
+                        orderNumber: order.orderNumber,
+
+                        totalAmount: order.totalPrice,
+
+                        address: `${order.shippingAddress.address}, 
+                                    ${order.shippingAddress.city}, 
+                                    ${order.shippingAddress.zip}`,
+                                    products: order.orderItems
+                    }
+                })
+                    console.log("Placed email queued");
+                    break;
+                
+                case "Shipped" : await emailQueue.add('sendEmail',{
+                    type : "SHIPPED_ORDER",
+                    data :{
+                        email:order.user.email,
+                        customerName:order.user.name,
+
+                        orderNumber:order.orderNumber,
+
+                        totalAmount:order.totalPrice,
+
+                        address: `${order.shippingAddress.address}, 
+                                    ${order.shippingAddress.city}, 
+                                    ${order.shippingAddress.zip}`,
+                                    products: order.orderItems
+                    }
+                })
+                    console.log("Shipped email queued");
+                    break;
+
+                case "Delivered" : await emailQueue.add('sendEmail',{
+                    type : "DELIVERED_EMAIL",
+                    data : {
+                        email:order.user.email,
+                        customerName:order.user.name,
+
+                        orderNumber:order.orderNumber,
+
+                        totalAmount:order.totalPrice,
+
+                        address: `${order.shippingAddress.address}, 
+                                    ${order.shippingAddress.city}, 
+                                    ${order.shippingAddress.zip}`,
+                                    products: order.orderItems
+                    }
+                })
+                console.log("Delivered email queued");
+                break;
+
+             case "Cancelled":
+                    await emailQueue.add('sendEmail', {
+                        type: "CANCEL_ORDER",
+                        data: {
+                            email: order.user.email,
+                            name: order.user.name,
+                            orderId: order.orderNumber,
+                            totalAmount: order.totalPrice
+                        }
+                    });
+                    console.log("Cancelled email queued");
+                    break;
+
             }
+        } catch (error) {
+
         }
 
         res.status(200).json({
@@ -192,18 +272,14 @@ export const cancelOrder = async (req, res) => {
         order.orderStatus = 'Cancelled'
         await order.save()
 
-        await addEmailToQueue({
-            email: order.user.email,
-            subject: `order number ${order.orderNumber} has been cancelled`,
-            message: `Hi ${order.user.name},
-            Your order ${order.orderNumber} has been cancelled successfully.
-            Payment Method:
-            ${order.paymentInfo.paymentMethod}
-            Payment Mode:
-            ${order.paymentInfo.paymentMode}
-            Thank you for shopping with SHOPx.
-            Best Regards,
-            SHOPx Support Team`
+        await emailQueue.add("email", {
+            type: "CANCEL_ORDER",
+            data: {
+                email: order.user.email,
+                name: order.user.name,
+                orderId: order.orderNumber,
+                totalAmount: order.totalPrice
+            }
         })
         return res.status(200).json({ success: true, message: "Order cancelled successfully", order })
     } catch (error) {

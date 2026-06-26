@@ -1,31 +1,59 @@
+import dotenv from "dotenv";
+
+dotenv.config();
 import { Worker } from "bullmq";
-import IORedis from "ioredis";
-import sendEmail from "../utils/sendEmail.js"; 
+import transporter from "../config/mail.js";
+import redis from "../config/redis.js";
 
-const connection = new IORedis({
-    host: "127.0.0.1",
-    port: 6379,
-    maxRetriesPerRequest: null
-});
+import { deliveredEmail, placedEmail, processingEmail, resetPasswordEmail, shippedEmail, welcomeEmail } from "../utils/emails.js";
+import { orderCancelEmail } from "../utils/emails.js";
 
-connection.on("error", (err) => {
-    console.error("Redis Connection Error in Email Worker:", err);
-});
+const worker = new Worker(
+    'emailQueue',
+    async (job) => {
+        const { type, data } = job.data
+        let email;
+        switch (type) {
+            case "WELCOME": email = welcomeEmail(data)
+                break
 
-const emailWorker = new Worker("EmailQueue", async (job) => {
-    console.log(`Processing Job ID: ${job.id}`);
-    const { email, subject, message } = job.data;
-    
+            case "CANCEL_ORDER": email = orderCancelEmail(data)
+                break
 
-    await sendEmail({ email, subject, message });
-}, { connection });
+            case "PLACED_ORDER": email = placedEmail(data)
+                break
 
-emailWorker.on("completed", (job) => {
-    console.log(`Job ${job.id} has completed successfully!`);
-});
+            case "PROCESSING_ORDER": email = processingEmail(data)
+                break
 
-emailWorker.on("failed", (job, err) => {
-    console.log(`Job ${job.id} failed with error: ${err.message}`);
-});
+            case "SHIPPED_ORDER": email = shippedEmail(data)
+                break
 
-export default emailWorker;
+            case "DELIVERED_EMAIL": email = deliveredEmail(data)
+                break
+
+            case "RESET_PASSWORD":
+                email = resetPasswordEmail(data);
+                break;
+
+        }
+        await transporter.sendMail({
+            from: process.env.SMTP_MAIL,
+            to: data.email,
+            subject: email.subject,
+            html: email.html
+        })
+    },
+    {
+        connection: redis
+    }
+)
+
+worker.on("completed", (job) => {
+    console.log('Email send', job.id)
+})
+
+worker.on("failed", (job, error) => {
+    console.log('Email not send', error.message)
+})
+export default worker

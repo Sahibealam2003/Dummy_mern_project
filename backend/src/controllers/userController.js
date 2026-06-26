@@ -2,7 +2,7 @@ import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
-import { addEmailToQueue } from "../queues/emailQueue.js";
+import { emailQueue } from "../queues/emailQueue.js";
 import redis from "../config/redis.js"
 import bcrypt from "bcrypt";
 import crypto from "crypto";
@@ -13,11 +13,11 @@ export const signup = async (req, res) => {
 
     try {
 
-        const { 
-            name, 
-            email, 
-            password, 
-            phoneNumber, 
+        const {
+            name,
+            email,
+            password,
+            phoneNumber,
             avatar,
             role
         } = req.body;
@@ -34,7 +34,7 @@ export const signup = async (req, res) => {
                 error: "All fields are required"
             });
         }
- 
+
 
         const existingUser = await User.findOne({ email });
 
@@ -103,10 +103,10 @@ export const signup = async (req, res) => {
 
         res.status(201).json({
 
-            success:true,
+            success: true,
 
             message:
-            "User created. Please verify your email",
+                "User created. Please verify your email",
         });
 
 
@@ -115,7 +115,7 @@ export const signup = async (req, res) => {
         console.log("Error in signup:", error);
 
         res.status(500).json({
-            error:"Internal server error"
+            error: "Internal server error"
         });
 
     }
@@ -181,7 +181,7 @@ export const login = async (req, res) => {
             });
         }
 
-        
+
         await redis.del(attemptsKey);
         await redis.del(blockedKey);
 
@@ -192,21 +192,13 @@ export const login = async (req, res) => {
         );
 
         const cookieOptions = {
-            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax"
         };
 
-        try {
-            await addEmailToQueue({
-                email: user.email,
-                subject: "Login Alert - Successful Login",
-                message: `Hi ${user.name},\n\nYou have successfully logged into your account on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}.\n\nIf this wasn't you, please secure your account immediately.\n\nBest regards,\nSupport Team`
-            });
-        } catch (emailError) {
-            console.log("Error sending login alert email:", emailError);
-        }
+
 
         res.status(200).cookie("token", token, cookieOptions).json({
             success: true,
@@ -272,7 +264,7 @@ export const verifyOTP = async (req, res) => {
                 await redis.expire(attemptsKey, 600);
             }
 
-       //rate limiting
+            //rate limiting
             if (attempts >= 3) {
                 await redis.set(blockedKey, "true", "EX", 300);
                 await redis.del(attemptsKey);
@@ -305,11 +297,11 @@ export const verifyOTP = async (req, res) => {
 
         // Welcome Email send alert queue
         try {
-            await addEmailToQueue({
-                email: user.email,
-                subject: "Welcome to Our Platform!",
-                message: `Hi ${user.name},\n\nWelcome! Your account verified successfully.\n\nBest regards,\nSupport Team`
-            });
+            await emailQueue.add("sendEmail", {
+                type: "WELCOME",
+                data: user
+            })
+
         } catch (emailError) {
             console.log("Error sending welcome email:", emailError);
         }
@@ -322,7 +314,7 @@ export const verifyOTP = async (req, res) => {
         );
 
         const cookieOptions = {
-            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax"
@@ -381,20 +373,6 @@ export const logout = async (req, res) => {
             }
         }
 
-        // Logout email notification disabled as requested
-        /*
-        if (user) {
-            try {
-                await addEmailToQueue({
-                    email: user.email,
-                    subject: "Account Logout Notification",
-                    message: `Hi ${user.name},\n\nYou have successfully logged out of your account on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}.\n\nIf you did not perform this logout, please secure your account immediately.\n\nBest regards,\nSupport Team`
-                });
-            } catch (queueError) {
-                console.log("Error queuing logout email:", queueError);
-            }
-        }
-        */
 
         res.status(200).cookie("token", null, cookieOptions).json({
             success: true,
@@ -412,7 +390,7 @@ export const getTempUsers = async (req, res) => {
     try {
         const keys = await redis.keys("temp_user:*");
         const list = [];
-        
+
         for (const key of keys) {
             const data = await redis.get(key);
             if (data) {
@@ -550,13 +528,6 @@ export const forgotPassword = async (req, res) => {
 
         const user = await User.findOne({ email });
         if (!user) {
-            // Secure response: don't reveal if email exists, or reveal it?
-            // Usually we return a message indicating if the email exists it was sent, but the user requested:
-            // "Reset password request route banayein jisme user apna email daale."
-            // "We have emailed your password reset link!" is nice.
-            // Let's return 404/invalid email for better UI feedback, or return success to prevent user enumeration?
-            // "Login rate limiting: 3 failed login attempts blocks email for 5 minutes".
-            // Let's return 404 if user not found, so they know they entered the wrong email. E-commerce platforms often say "User not found" to help real customers who mistyped. Let's return 404.
             return res.status(404).json({ error: "No user found with that email address" });
         }
 
@@ -570,21 +541,23 @@ export const forgotPassword = async (req, res) => {
 
         await user.save();
 
-        // Queue reset email
-        const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        const clientUrl = process.env.FRONTEND_URL || "http://localhost:5173";
         const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
-        const emailMessage = `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\nPlease click on the following link, or paste this into your browser to complete the process within 30 minutes:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.\n`;
 
         try {
-            await addEmailToQueue({
-                email: user.email,
-                subject: "Password Reset Request",
-                message: emailMessage
+            await emailQueue.add("sendEmail", {
+                type: "RESET_PASSWORD",
+                data: {
+                    email: user.email,
+                    name: user.name,
+                    resetUrl
+                }
             });
-            console.log(`Password reset email queued for ${user.email}`);
+            console.log("Reset password email queued successfully");
+
+
         } catch (queueErr) {
-            console.error("Failed to queue password reset email:", queueErr);
-            // Rollback DB changes if queue fails
+            console.error("Failed to queue password reset email:", queueErr)
             user.resetPasswordToken = null;
             user.resetPasswordExpire = null;
             await user.save();
@@ -597,45 +570,6 @@ export const forgotPassword = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in forgotPassword:", error);
-        res.status(500).json({ error: "Internal server error" });
-    }
-};
-
-// Reset password with token
-export const resetPassword = async (req, res) => {
-    try {
-        const { password } = req.body;
-        if (!password) {
-            return res.status(400).json({ error: "Password is required" });
-        }
-        if (password.length < 6) {
-            return res.status(400).json({ error: "Password must be at least 6 characters long" });
-        }
-
-        const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
-
-        const user = await User.findOne({
-            resetPasswordToken: hashedToken,
-            resetPasswordExpire: { $gt: Date.now() }
-        });
-
-        if (!user) {
-            return res.status(400).json({ error: "Password reset token is invalid or has expired" });
-        }
-
-        // Update password and clear reset token fields
-        user.password = password;
-        user.resetPasswordToken = null;
-        user.resetPasswordExpire = null;
-
-        await user.save();
-
-        res.status(200).json({
-            success: true,
-            message: "Password updated successfully"
-        });
-    } catch (error) {
-        console.error("Error in resetPassword:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };

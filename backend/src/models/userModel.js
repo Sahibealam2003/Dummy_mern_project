@@ -45,14 +45,14 @@ const userSchema = new mongoose.Schema({
         enum: ["user", "admin"],
         default: "user"
     },
-    emailOTP:{
-    type:String,
-    default:null
-},
+    emailOTP: {
+        type: String,
+        default: null
+    },
 
-    emailOTPExpire:{
-        type:Date,
-        default:null
+    emailOTPExpire: {
+        type: Date,
+        default: null
     },
     wishlist: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -65,6 +65,10 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpire: {
         type: Date,
         default: null
+    }, fcmToken: {
+
+        type: String
+
     }
 }, {
     timestamps: true

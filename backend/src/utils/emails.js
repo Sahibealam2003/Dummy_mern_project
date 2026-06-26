@@ -239,3 +239,14 @@ export const resetPasswordEmail = (data) => {
         `
     };
 };
+
+export const orderUnderProcessingEmail =(data)=>{
+    return {
+        subject:"Your Order is Under Processing",
+        html:`
+        <p>${data.name}</p>
+        <h1>Your Order is Under Processing</h1>
+        <p>Thankyou For Shopping With Us</p>
+        `
+    }
+}

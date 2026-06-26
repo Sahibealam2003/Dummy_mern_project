@@ -455,7 +455,7 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-// Toggle wishlist status for a product (customers only)
+// Toggle wishlist status
 export const toggleWishlist = async (req, res) => {
     try {
         if (req.user.role === "admin") {
@@ -471,7 +471,6 @@ export const toggleWishlist = async (req, res) => {
 
         const index = user.wishlist.indexOf(productId);
         if (index > -1) {
-            // Remove product from wishlist
             user.wishlist.splice(index, 1);
             await user.save();
             return res.status(200).json({
@@ -480,7 +479,6 @@ export const toggleWishlist = async (req, res) => {
                 wishlist: user.wishlist
             });
         } else {
-            // Add product to wishlist
             user.wishlist.push(productId);
             await user.save();
             return res.status(200).json({
@@ -495,7 +493,7 @@ export const toggleWishlist = async (req, res) => {
     }
 };
 
-// Get populated user wishlist (customers only)
+// Get populated user wishlist
 export const getWishlist = async (req, res) => {
     try {
         if (req.user.role === "admin") {
@@ -508,7 +506,6 @@ export const getWishlist = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Filter out any deleted products if they still exist in the wishlist array
         const activeWishlist = user.wishlist.filter(item => item !== null);
 
         res.status(200).json(activeWishlist);
@@ -518,7 +515,7 @@ export const getWishlist = async (req, res) => {
     }
 };
 
-// Request password reset link (forgot password)
+// Request password
 export const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -531,10 +528,8 @@ export const forgotPassword = async (req, res) => {
             return res.status(404).json({ error: "No user found with that email address" });
         }
 
-        // Generate reset token
         const resetToken = crypto.randomBytes(20).toString("hex");
 
-        // Hash and set reset fields
         const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
         user.resetPasswordToken = hashedToken;
         user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
@@ -573,3 +568,31 @@ export const forgotPassword = async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
+//Save firebase token 
+export const saveToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({ error: "Token is required" });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user._id, 
+            { fcmToken: token }, 
+            { new: true }
+        );
+
+        console.log("FCM Token saved ", user.email);
+
+        res.status(200).json({
+            success: true,
+            message: "Token saved successfully"
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error});
+    }
+}

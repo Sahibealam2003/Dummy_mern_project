@@ -52,3 +52,9 @@ export const forgotPasswordApi = async (email) => {
     const response = await AUTH_API.post("/forgot-password", { email });
     return response.data;
 };
+export const sendFToken = async(token)=>{
+    const response = await AUTH_API.post("/save-token", {
+        token: token
+    });
+    return response.data;
+}

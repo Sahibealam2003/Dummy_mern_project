@@ -5,7 +5,7 @@ import { Worker } from "bullmq";
 import transporter from "../config/mail.js";
 import redis from "../config/redis.js";
 
-import { deliveredEmail, placedEmail, processingEmail, resetPasswordEmail, shippedEmail, welcomeEmail } from "../utils/emails.js";
+import { deliveredEmail, orderUnderProcessingEmail, placedEmail, processingEmail, resetPasswordEmail, shippedEmail, welcomeEmail } from "../utils/emails.js";
 import { orderCancelEmail } from "../utils/emails.js";
 
 const worker = new Worker(
@@ -35,6 +35,10 @@ const worker = new Worker(
             case "RESET_PASSWORD":
                 email = resetPasswordEmail(data);
                 break;
+
+            case "ORDER_UNDER_PROCESSING":
+                email = orderUnderProcessingEmail(data);
+                break
 
         }
         await transporter.sendMail({

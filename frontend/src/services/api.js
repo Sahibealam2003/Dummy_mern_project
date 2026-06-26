@@ -105,4 +105,9 @@ export const cancelOrderApi = async (id) => {
     const response = await API.put(`/orders/${id}/cancel`);
     return response.data;
 };
+
+export const deleteOrderApi = async (id) => {
+    const response = await API.delete(`/orders/${id}`);
+    return response.data;
+};
     

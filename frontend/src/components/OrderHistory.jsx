@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { cancelOrderApi, getMyOrders } from "../services/api";
+import { cancelOrderApi, deleteOrderApi, getMyOrders } from "../services/api";
 import { generateInvoice } from "../utils/generateInvoice";
 
 const OrderHistory = () => {
@@ -10,9 +10,9 @@ const OrderHistory = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [loading, setLoading] = useState(true);
-    const[isOpen,setIsOpen] = useState(false)
+    const [isOpen, setIsOpen] = useState(false)
     const navigate = useNavigate();
-
+    console.log(orders)
     useEffect(() => {
         if (!isLoggedIn) {
             navigate("/login?redirect=/orders");
@@ -50,6 +50,21 @@ const OrderHistory = () => {
             alert(err.response?.data?.error || "Failed to cancel order");
         }
     };
+
+    const handleDeleteOrder = async(orderId) =>{
+        setIsOpen(true)
+        try {
+            const data = await deleteOrderApi(orderId);
+            if(data.success){
+                setOrders((prev) =>
+                    prev.filter((order) => order._id !== orderId)
+                );
+            }
+        } catch (error) {
+            console.error("Failed to delete order:", error);
+            alert(error.response?.data?.error || "Failed to delete order");
+        }
+    }
 
     // Return badge style based on order status
     const getStatusStyle = (status) => {
@@ -217,21 +232,41 @@ const OrderHistory = () => {
                                                 {order.shippingAddress?.city}
                                             </span>
                                         </div>
-                                        
+
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        {order.orderStatus !== "Shipped" && order.orderStatus !== "Delivered" && order.orderStatus !== "Cancelled" &&
-                                            (
+
+                                        {
+                                            order.orderStatus === "Cancelled" || order.orderStatus == "Delivered" ? (
+
                                                 <button
-                                                    className="bg-red-700 border text-white border-red-100 cursor-pointer py-2 px-1.5 rounded-sm text-[15px] font-semibold "
                                                     onClick={() => {
-                                                        handleCancelOrder(order._id)
+
+                                                        handleDeleteOrder(order._id)
+
                                                     }}
+                                                    className="text-xs font-bold text-red-600 hover:text-red-800"
                                                 >
-                                                    Cancel Order
+                                                    Delete
                                                 </button>
 
-                                            )}
+
+                                            ) : (
+
+                                                ["Pending", "Placed", "Processing"].includes(order.orderStatus) && (
+
+                                                    <button
+                                                        onClick={() => handleCancelOrder(order._id)}
+                                                        className="text-xs font-bold text-orange-600 hover:text-orange-800"
+                                                    >
+                                                        Cancel
+                                                    </button>
+
+                                                )
+
+                                            )
+                                        }
+
                                         {order.orderStatus == "Delivered" && (
                                             <button
                                                 onClick={() => generateInvoice(order)}

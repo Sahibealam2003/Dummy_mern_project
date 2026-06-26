@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { sendFToken } from "./services/authApi";
+
 import { fetchCart } from "./reducers/cartSlice";
+
 import ProductList from "./components/ProductList";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -19,95 +22,373 @@ import DummyPage from "./components/DummyPage";
 import AdminPanel from "./components/AdminPanel";
 
 
+import { getToken, onMessage } from "firebase/messaging";
+import { messaging } from "./firebase/firebase";
+
 
 function AppContent({ isCartOpen, setIsCartOpen }) {
+
   const dispatch = useDispatch();
+
   const location = useLocation();
+
+
   const isDealsPage = location.pathname === "/todays-deals";
+
+
   const [showFooter, setShowFooter] = useState(true);
+
   const [showNavbar, setShowNavbar] = useState(true);
-  
-  const { isLoggedIn, user } = useSelector((state) => state.auth);
-  const isAdmin = isLoggedIn && user?.role === "admin";
+
+
+
+  const { isLoggedIn, user } = useSelector(
+    (state) => state.auth
+  );
+
+
+  const isAdmin =
+    isLoggedIn && user?.role === "admin";
+
+
 
   React.useEffect(() => {
+
     if (!isAdmin) {
+
       dispatch(fetchCart());
+
     }
-  }, [isLoggedIn, isAdmin, dispatch]);
+
+  }, [
+    isLoggedIn,
+    isAdmin,
+    dispatch
+  ]);
 
   React.useEffect(() => {
-    const isSpecialPage = ["/checkout", "/login", "/signup", "/admin", "/forgot-password"].includes(location.pathname);
-    setShowFooter(!isSpecialPage);
-    setShowNavbar(location.pathname !== "/admin");
+
+  const unsubscribe = onMessage(
+    messaging,
+    (payload) => {
+
+      console.log(
+        "Message received:",
+        payload
+      );
+
+
+      if(Notification.permission === "granted"){
+
+        new Notification(
+          payload.notification?.title,
+          {
+            body: payload.notification?.body
+          }
+        );
+
+      }
+
+    }
+  );
+
+
+  return () => unsubscribe();
+
+
+}, []);
+
+
+
+  React.useEffect(() => {
+
+
+    const hidePages = [
+      "/checkout",
+      "/login",
+      "/signup",
+      "/admin",
+      "/forgot-password"
+    ];
+
+
+    setShowFooter(
+      !hidePages.includes(location.pathname)
+    );
+
+
+    setShowNavbar(
+      location.pathname !== "/admin"
+    );
+
+
   }, [location.pathname]);
 
-  // Scroll to top on route change
+
+
+
   React.useEffect(() => {
+
     window.scrollTo(0, 0);
+
   }, [location.pathname]);
+
+
+
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: "#f5f3ef" }}>
-      {showNavbar && <Navbar onCartOpen={() => setIsCartOpen(true)} />}
-      {/* Two-row navbar = 104px (64px top + 40px secondary) */}
-      <main 
-        className={isDealsPage ? "flex-1 flex items-center justify-center p-4" : "flex-1"} 
-        style={{ paddingTop: location.pathname === "/admin" ? 0 : (location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/forgot-password") ? 76 : 104 }}
+
+    <div
+      className="flex min-h-screen flex-col"
+      style={{ background: "#f5f3ef" }}
+    >
+
+
+      {
+        showNavbar &&
+        <Navbar
+          onCartOpen={() => setIsCartOpen(true)}
+        />
+      }
+
+
+
+      <main
+
+        className={
+          isDealsPage
+            ?
+            "flex-1 flex items-center justify-center p-4"
+            :
+            "flex-1"
+        }
+
+
+        style={{
+          paddingTop:
+            location.pathname === "/admin"
+              ?
+              0
+              :
+              (
+                location.pathname === "/login" ||
+                location.pathname === "/signup" ||
+                location.pathname === "/forgot-password"
+              )
+                ?
+                76
+                :
+                104
+
+        }}
+
       >
+
+
+
         <Routes>
+
+
           <Route path="/" element={<ProductList />} />
+
           <Route path="/products" element={<ProductList />} />
-          <Route path="/todays-deals" element={<TodaysDeals />} />
-          <Route path="/trending-products" element={<TrendingProducts />} />
-          <Route path="/special-offers" element={<SpecialOffers />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/orders" element={<OrderHistory />} />
-          <Route path="/wishlist" element={<Wishlist />} />
- 
-          <Route 
-            path="/checkout" 
-            element={
-              <Checkout 
-                onHideFooter={() => setShowFooter(false)} 
-                onShowFooter={() => setShowFooter(true)} 
-              />
-            } 
+
+
+          <Route
+            path="/todays-deals"
+            element={<TodaysDeals />}
           />
-          {/* Dummy Pages for footer links */}
-          <Route path="/categories" element={<DummyPage title="Categories" description="Explore our wide range of product categories." />} />
-          <Route path="/featured" element={<DummyPage title="Featured Products" description="Handpicked premium collections for you." />} />
-          <Route path="/about" element={<DummyPage title="About Us" description="Learn more about our company, values, and mission." />} />
-          <Route path="/careers" element={<DummyPage title="Careers" description="Join our team and build the future of e-commerce." />} />
-          <Route path="/blog" element={<DummyPage title="Blog & News" description="The latest articles, updates, and shopping trends." />} />
-          <Route path="/press-kit" element={<DummyPage title="Press Kit" description="Official resources, logos, and media contact info." />} />
-          <Route path="/documentation" element={<DummyPage title="Documentation" description="Developer APIs, guides, and integration tutorials." />} />
-          <Route path="/help-center" element={<DummyPage title="Help Center" description="Find answers to frequently asked questions and support guides." />} />
-          <Route path="/contact" element={<DummyPage title="Contact Us" description="Get in touch with our customer service and support team." />} />
-          <Route path="/status" element={<DummyPage title="System Status" description="Real-time status of our services, APIs, and deliveries." />} />
-          <Route path="/privacy-policy" element={<DummyPage title="Privacy Policy" description="How we handle, secure, and protect your personal information." />} />
-          <Route path="/terms-of-service" element={<DummyPage title="Terms of Service" description="The terms, rules, and conditions for using our platform." />} />
-          <Route path="/cookie-policy" element={<DummyPage title="Cookie Policy" description="Details about how we use cookies to improve your browsing experience." />} />
-          <Route path="/licenses" element={<DummyPage title="Licenses" description="Open source libraries, attributions, and legal licensing." />} />
+
+
+          <Route
+            path="/trending-products"
+            element={<TrendingProducts />}
+          />
+
+
+          <Route
+            path="/special-offers"
+            element={<SpecialOffers />}
+          />
+
+
+          <Route
+            path="/login"
+            element={<Login />}
+          />
+
+
+          <Route
+            path="/signup"
+            element={<Signup />}
+          />
+
+
+          <Route
+            path="/forgot-password"
+            element={<ForgotPassword />}
+          />
+
+
+          <Route
+            path="/admin"
+            element={<AdminPanel />}
+          />
+
+
+          <Route
+            path="/orders"
+            element={<OrderHistory />}
+          />
+
+
+          <Route
+            path="/wishlist"
+            element={<Wishlist />}
+          />
+
+
+
+          <Route
+
+            path="/checkout"
+
+            element={
+
+              <Checkout
+
+                onHideFooter={() =>
+                  setShowFooter(false)
+                }
+
+
+                onShowFooter={() =>
+                  setShowFooter(true)
+                }
+
+              />
+
+            }
+
+          />
+
+
+
+          <Route
+            path="/categories"
+            element={
+              <DummyPage
+                title="Categories"
+              />
+            }
+          />
+
+
+
+          <Route
+            path="/about"
+            element={
+              <DummyPage
+                title="About Us"
+              />
+            }
+          />
+
+
+
+          <Route
+            path="/contact"
+            element={
+              <DummyPage
+                title="Contact Us"
+              />
+            }
+          />
+
+
         </Routes>
+
+
       </main>
-      {!isDealsPage && showFooter && <Footer />}
-      {!isAdmin && <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />}
+
+
+
+      {
+        !isDealsPage &&
+        showFooter &&
+        <Footer />
+      }
+
+      {
+        !isAdmin &&
+        <Cart
+          isOpen={isCartOpen}
+          onClose={() =>
+            setIsCartOpen(false)
+          }
+        />
+      }
     </div>
-  );
+
+  )
+
 }
 
+
+
+
+
 function App() {
-  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const [
+    isCartOpen,
+    setIsCartOpen
+  ] = useState(false);
+
+
+
+
+
+
+  const requestPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+
+      if (permission === "granted") {
+        const token = await getToken(messaging, {
+          vapidKey: "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw"
+        });
+        console.log("FCM TOKEN:", token);
+        await sendFToken(token);
+        console.log("FCM Token saved to backend successfully");
+      } else {
+        console.log("Notification permission denied");
+      }
+    } catch (error) {
+      console.log("Firebase Error:", error);
+    }
+  };
 
   return (
     <BrowserRouter>
-      <AppContent isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
+      <button
+        onClick={requestPermission}
+        className="fixed  right-5 z-50 bg-black text-white text-[10px] font-semibold px-2 py-2 rounded shadow-md hover:bg-zinc-800 transition-colors duration-200"
+      >
+        Enable Notification
+      </button>
+
+    
+
+      <AppContent
+        isCartOpen={isCartOpen}
+        setIsCartOpen={setIsCartOpen}
+      />
     </BrowserRouter>
-  );
+  )
+
+
 }
+
 
 export default App;

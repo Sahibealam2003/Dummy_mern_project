@@ -1,6 +1,8 @@
 import Order from "../models/orderModel.js";
 import { emailQueue } from "../queues/emailQueue.js";
 import Cart from "../models/cartModel.js";
+
+import { sendNotification } from "../utils/sendNotification.js";
 import { tryCatch } from "bullmq";
 
 //Create new order
@@ -36,7 +38,6 @@ export const createOrder = async (req, res) => {
             orderStatus: "Pending"
         });
 
-        // Clear user database cart on successful order creation
         try {
             await Cart.findOneAndUpdate({ user: req.user._id }, { items: [] });
             console.log(`Database cart cleared for user: ${req.user.email}`);
@@ -44,35 +45,18 @@ export const createOrder = async (req, res) => {
             console.error("Failed to clear database cart on checkout:", cartClearErr);
         }
 
-        // Enqueue Order Confirmation Email
+        //Push Notification
         try {
-            const itemsListText = orderItems
-                .map(item => `- ${item.title} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`)
-                .join("\n");
 
-            const subtotal = orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-            const tax = subtotal * 0.1;
-            const shipPrice = Number(shippingPrice || 0.0);
-            const paymentDetails = `${paymentInfo?.paymentMethod || "Card"} (${paymentInfo?.paymentMode || "Online"})`;
-            const emailMessage = `Hi ${req.user.name},\n\nThank you for shopping with SHOPx! Your order has been placed successfully.\n\nOrder Details:\nOrder ID: ${orderNumber}\nSubtotal: $${subtotal.toFixed(2)}\nShipping: ${shipPrice > 0 ? `$${shipPrice.toFixed(2)}` : "FREE"}\nTax (10%): $${tax.toFixed(2)}\nTotal Price: $${Number(totalPrice).toFixed(2)}\nPayment Method: ${paymentDetails}\nEstimated Delivery: 3 to 5 business days\n\nItems Purchased:\n${itemsListText}\n\nShipping Destination:\n${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.zip}\n\nWe will update you as soon as your order has been shipped.\n\nBest regards,\nSHOPx Support Team`;
+            await sendNotification(
+                req.user.fcmToken,
+                "Order Status",
+                "Your Order Under Processing"
+            );
 
-            //         await addEmailToQueue({
-            //             email: req.user.email,
-            //             subject: `Order Confirmation - ${orderNumber}`,
-            //             message: `Hi ${req.user.name},
-            // Thank you for shopping with SHOPx!
-            // Order Details:
-            // Order ID: ${orderNumber}
-            // Payment: ${paymentDetails}
-            // Total Price: $${Number(totalPrice).toFixed(2)}
-            // Items Purchased:
-            // ${itemsListText}
-            // Thank you,
-            // SHOPx Support Team`
-            //         });
-            console.log(`Order confirmation email queued for ${req.user.email}`);
-        } catch (emailError) {
-            console.error("Failed to queue order email:", emailError);
+            console.log('Notification sent successfully')
+        } catch (error) {
+            console.log(error.message)
         }
 
 
@@ -82,6 +66,20 @@ export const createOrder = async (req, res) => {
             message: "Order placed successfully",
             order
         });
+
+
+        try {
+            await emailQueue.add("sendEmail", {
+                type: "ORDER_UNDER_PROCESSING",
+                data: {
+                    email: req.user.email,
+                    name: order.user.name
+                }
+            })
+            console.log(`Order confirmation email queued for ${req.user.email}`);
+        } catch (emailError) {
+            console.error("Failed to queue order email:", emailError);
+        }
     } catch (error) {
         console.error("Error creating order:", error);
         res.status(500).json({ error: "Failed to place order" });
@@ -147,7 +145,7 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(400).json({ error: "Status field is required" });
         }
 
-        const order = await Order.findById(req.params.id).populate("user", "name email");
+        const order = await Order.findById(req.params.id).populate("user", "name email fcmToken");
 
         if (!order) {
             return res.status(404).json({ error: "Order not found" });
@@ -159,6 +157,17 @@ export const updateOrderStatus = async (req, res) => {
         try {
             switch (status) {
                 case "Processing":
+                    try {
+                        await sendNotification(
+                            order.user.fcmToken,
+                            "Order Status",
+                            "Your Order Under Processing"
+                        );
+                        console.log('Processing notification sent successfully')
+
+                    } catch (error) {
+                        console.log("error")
+                    }
                     await emailQueue.add('sendEmail', {
                         type: "PROCESSING_ORDER",
                         data: {
@@ -170,64 +179,116 @@ export const updateOrderStatus = async (req, res) => {
                     console.log("Processing email queued");
                     break
 
-                case "Placed": await emailQueue.add('sendEmail', {
-                    type: "PLACED_ORDER",
-                    data: {
-                        email: order.user.email,
-                        customerName: order.user.name,
+                case "Placed":
 
-                        orderNumber: order.orderNumber,
+                    try {
+                        await sendNotification(
+                            order.user.fcmToken,
+                            "Order Status",
+                            "Your Order Placed"
+                        );
+                        console.log('Placed notification sent successfully')
 
-                        totalAmount: order.totalPrice,
+                    } catch (error) {
+                        console.log("error")
+                    }
+                    await emailQueue.add('sendEmail', {
+                        type: "PLACED_ORDER",
+                        data: {
+                            email: order.user.email,
+                            customerName: order.user.name,
 
-                        address: `${order.shippingAddress.address}, 
+                            orderNumber: order.orderNumber,
+
+                            totalAmount: order.totalPrice,
+
+                            address: `${order.shippingAddress.address}, 
                                     ${order.shippingAddress.city}, 
                                     ${order.shippingAddress.zip}`,
-                                    products: order.orderItems
-                    }
-                })
+                            products: order.orderItems
+                        }
+                    })
                     console.log("Placed email queued");
                     break;
-                
-                case "Shipped" : await emailQueue.add('sendEmail',{
-                    type : "SHIPPED_ORDER",
-                    data :{
-                        email:order.user.email,
-                        customerName:order.user.name,
 
-                        orderNumber:order.orderNumber,
+                case "Shipped":
 
-                        totalAmount:order.totalPrice,
+                    try {
+                        await sendNotification(
+                            order.user.fcmToken,
+                            "Order Status",
+                            "Your Order Has Been Shipped"
+                        );
+                        console.log('Shipped notification sent successfully')
 
-                        address: `${order.shippingAddress.address}, 
+                    } catch (error) {
+                        console.log("error")
+                    }
+
+                    await emailQueue.add('sendEmail', {
+                        type: "SHIPPED_ORDER",
+                        data: {
+                            email: order.user.email,
+                            customerName: order.user.name,
+
+                            orderNumber: order.orderNumber,
+
+                            totalAmount: order.totalPrice,
+
+                            address: `${order.shippingAddress.address}, 
                                     ${order.shippingAddress.city}, 
                                     ${order.shippingAddress.zip}`,
-                                    products: order.orderItems
-                    }
-                })
+                            products: order.orderItems
+                        }
+                    })
                     console.log("Shipped email queued");
                     break;
 
-                case "Delivered" : await emailQueue.add('sendEmail',{
-                    type : "DELIVERED_EMAIL",
-                    data : {
-                        email:order.user.email,
-                        customerName:order.user.name,
+                case "Delivered":
 
-                        orderNumber:order.orderNumber,
+                    try {
+                        await sendNotification(
+                            order.user.fcmToken,
+                            "Order Status",
+                            "Your Order Has Been Delivered"
+                        );
+                        console.log('Delivered notification sent successfully')
 
-                        totalAmount:order.totalPrice,
+                    } catch (error) {
+                        console.log("error")
+                    }
 
-                        address: `${order.shippingAddress.address}, 
+                    await emailQueue.add('sendEmail', {
+                        type: "DELIVERED_EMAIL",
+                        data: {
+                            email: order.user.email,
+                            customerName: order.user.name,
+
+                            orderNumber: order.orderNumber,
+
+                            totalAmount: order.totalPrice,
+
+                            address: `${order.shippingAddress.address}, 
                                     ${order.shippingAddress.city}, 
                                     ${order.shippingAddress.zip}`,
-                                    products: order.orderItems
-                    }
-                })
-                console.log("Delivered email queued");
-                break;
+                            products: order.orderItems
+                        }
+                    })
+                    console.log("Delivered email queued");
+                    break;
 
-             case "Cancelled":
+                case "Cancelled":
+                    try {
+                        await sendNotification(
+                            order.user.fcmToken,
+                            "Order Status",
+                            "Your Order Has Been Cancelled"
+                        );
+                        console.log('Cancelled notification sent successfully')
+
+                    } catch (error) {
+                        console.log("error")
+                    }
                     await emailQueue.add('sendEmail', {
                         type: "CANCEL_ORDER",
                         data: {
@@ -259,7 +320,7 @@ export const updateOrderStatus = async (req, res) => {
 //Cancel Order
 export const cancelOrder = async (req, res) => {
     try {
-        const order = await Order.findById(req.params.id).populate("user", "name email")
+        const order = await Order.findById(req.params.id).populate("user", "name email fcmToken")
         if (!order) {
             return res.status(404).json({ error: "Order not found" })
         }
@@ -271,7 +332,17 @@ export const cancelOrder = async (req, res) => {
         }
         order.orderStatus = 'Cancelled'
         await order.save()
+         try {
+                        await sendNotification(
+                            order.user.fcmToken,
+                            "Order Status",
+                            "Your Order Has Been Cancelled"
+                        );
+                        console.log('Cancelled notification sent successfully')
 
+                    } catch (error) {
+                        console.log("error")
+                    }
         await emailQueue.add("email", {
             type: "CANCEL_ORDER",
             data: {
@@ -285,5 +356,27 @@ export const cancelOrder = async (req, res) => {
     } catch (error) {
         console.error("Error cancelling order:", error);
         res.status(500).json({ error: "Failed to cancel order" });
+    }
+}
+
+
+//Delete order 
+export const deleteOrder = async (req,res) => {
+    try {
+        const {id} = req.params;
+        if(!id)
+            return res.status(400).json({error:"Order ID is required"})
+
+        const order = await Order.findById(id);
+        if(!order)
+            return res.status(404).json({error:"Order not found"});
+        
+        if (order.orderStatus === "pending" || order.orderStatus === "processing") {
+          return res.status(400).json({ error: "Cannot delete order that is pending ,placed, processing and shipped"});
+        }
+        await Order.findByIdAndDelete(id);
+        res.status(200).json({ success: true, message: "Order deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to delete order" });
     }
 }

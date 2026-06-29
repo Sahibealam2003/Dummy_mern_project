@@ -4,6 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { clearCart } from "../reducers/cartSlice";
 import { getAllSpecialOffers, createOrder } from "../services/api";
 import { generateInvoice } from "../utils/generateInvoice";
+import {
+    createPaymentOrderApi,
+    verifyPaymentApi
+} from "../services/api";
 
 const FIELD_CLS = "w-full rounded-xl border border-[#e4dfd9] bg-[#fafafa] px-4 py-2 text-sm text-[#2c2420] placeholder-[#a69c93] outline-none focus:bg-[#fafafa] focus:border-[#e8622a] focus:ring-4 focus:ring-[#e8622a]/10 transition-all duration-200";
 const LABEL_CLS = "block text-xs font-semibold uppercase tracking-wider text-[#8c7e74] mb-1.5";
@@ -21,8 +25,7 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     const [email, setEmail] = useState(user?.email || "");
     const [address, setAddress] = useState("");
     const [paymentMode, setPaymentMode] = useState("Online");
-    const [paymentMethod, setPaymentMethod] = useState("Card");
-    const [upiId, setUpiId] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("Online");
     const handleUseDefaultAddress = () => {
         setAddress("near Mawana Meerut");
         setCity("India");
@@ -33,11 +36,7 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     const [offers, setOffers] = useState([]);
     const [city, setCity] = useState("");
     const [zip, setZip] = useState("");
-    const [cardName, setCardName] = useState("");
-    const [cardNumber, setCardNumber] = useState("");
-    const [cardExpiry, setCardExpiry] = useState("");
-    const [cardCvv, setCardCvv] = useState("");
-    const [loading,setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
     // Promo code state
     const [promoInput, setPromoInput] = useState("");
     const [promoApplied, setPromoApplied] = useState(false);
@@ -111,8 +110,68 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
 
     if (step === "success" && orderSummarySnapshot) {
         return (
-            <div className="mx-auto max-w-2xl px-4 py-12 text-center animate-scale-in">
+            <div className="mx-auto max-w-2xl px-4 py-8 text-center animate-scale-in">
+                {/* Stepper Progress Indicator */}
+                <div className="mb-8 max-w-md mx-auto">
+                    <div className="flex items-center justify-between relative">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-full bg-stone-200 -z-10 rounded-full" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-full bg-gradient-to-r from-emerald-400 to-emerald-500 -z-10 rounded-full" />
+
+                        <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
+                            <div className="h-7 w-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-md shadow-emerald-500/10">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-stone-500">Shipping</span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
+                            <div className="h-7 w-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-md shadow-emerald-500/10">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-stone-500">Payment</span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
+                            <div className="h-7 w-7 rounded-full bg-gradient-to-r from-[#e8622a] to-[#c44e1e] text-white flex items-center justify-center text-xs font-black shadow-md shadow-[#e8622a]/10">
+                                3
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#2c2420]">Confirmation</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="relative overflow-hidden rounded-3xl border border-[#ede8e2] bg-white p-8 md:p-12 shadow-md">
+                    {/* Falling Confetti Particles */}
+                    <div className="confetti-container">
+                        {Array.from({ length: 60 }).map((_, i) => {
+                            const colors = ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f87171", "#e8622a"];
+                            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                            const left = `${Math.random() * 100}%`;
+                            const delay = `${Math.random() * 2.5}s`;
+                            const sizeWidth = `${Math.floor(Math.random() * 6) + 6}px`;
+                            const sizeHeight = `${Math.floor(Math.random() * 12) + 8}px`;
+                            const duration = `${Math.random() * 1.5 + 2.5}s`;
+                            return (
+                                <div 
+                                    key={i} 
+                                    className="confetti-particle"
+                                    style={{
+                                        left,
+                                        backgroundColor: randomColor,
+                                        animationDelay: delay,
+                                        animationDuration: duration,
+                                        width: sizeWidth,
+                                        height: sizeHeight,
+                                    }}
+                                />
+                            );
+                        })}
+                    </div>
+
                     {/* Decorative Background Elements */}
                     <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#e8622a]/5 blur-3xl pointer-events-none" />
                     <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#c44e1e]/5 blur-3xl pointer-events-none" />
@@ -192,10 +251,6 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                             <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                             </svg>
-                                        ) : orderSummarySnapshot.paymentMethod === "UPI" ? (
-                                            <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                            </svg>
                                         ) : (
                                             <svg className="h-4 w-4 text-[#8c7e74]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
@@ -204,10 +259,8 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                     <span className="font-semibold text-[#2c2420]">
                                         {orderSummarySnapshot.paymentMode === "Offline" ? (
                                             "Cash on Delivery (COD)"
-                                        ) : orderSummarySnapshot.paymentMethod === "UPI" ? (
-                                            `UPI (ID: ${orderSummarySnapshot.upiId || "Saved UPI"})`
                                         ) : (
-                                            `Card ending in •••• ${orderSummarySnapshot.cardLastFour}`
+                                            `Online (Razorpay ID: •••• ${orderSummarySnapshot.cardLastFour})`
                                         )}
                                     </span>
                                 </div>
@@ -215,6 +268,50 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                             <div>
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c7e74] block mb-0.5">Amount Charged</span>
                                 <span className="text-base font-bold text-[#e8622a]">${orderSummarySnapshot.finalTotal.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        {/* Order Progress Tracker Timeline */}
+                        <div className="border-t border-[#f5f3ef] pt-4">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c7e74] block mb-3">Order Status Lifecycle</span>
+                            <div className="relative flex justify-between items-center max-w-md mx-auto pt-2 pb-1">
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-full bg-stone-100 rounded-full -z-10" />
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-[33%] bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full -z-10" />
+
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-full bg-emerald-500 text-white border-2 border-white flex items-center justify-center shadow">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-wider text-[#2c2420]">Ordered</span>
+                                </div>
+
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-full bg-emerald-50 text-emerald-600 border-2 border-white flex items-center justify-center shadow">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-ping" />
+                                    </div>
+                                    <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-600">Processing</span>
+                                </div>
+
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-full bg-white text-stone-300 border-2 border-stone-100 flex items-center justify-center shadow-sm">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-[8px] font-bold uppercase tracking-wider text-stone-400">Shipped</span>
+                                </div>
+
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-full bg-white text-stone-300 border-2 border-stone-100 flex items-center justify-center shadow-sm">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-[8px] font-bold uppercase tracking-wider text-stone-400">Delivered</span>
+                                </div>
                             </div>
                         </div>
 
@@ -345,108 +442,358 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
     };
 
     const handlePlaceOrder = async (e) => {
+
         e.preventDefault();
-        setStep("processing");
 
-        // Payment logic variables define karein
-        let cardLastFour = "••••";
-        let status = "Pending";
-        let finalPaymentMethod = paymentMethod;
-
-        if (paymentMode === "Offline") {
-            finalPaymentMethod = "Cash on Delivery";
-            cardLastFour = "COD";
-            status = "Pending"; // Delivery par pay hoga isliye status Pending rahega
-        } else {
-            // Online Case
-            if (paymentMethod === "Card") {
-                cardLastFour = cardNumber.replace(/\s/g, "").slice(-4) || "••••";
-                status = "Paid"; // Simulated online payment successful
-            } else if (paymentMethod === "UPI") {
-                cardLastFour = "UPI";
-                status = "Paid"; // Simulated online payment successful
-            }
-        }
-
-        // Map cart items to the database structure
-        const mappedItems = cartItems.map((item) => ({
-            product: item.id || item._id,
-            title: item.title,
-            price: item.price,
-            quantity: item.quantity,
-            image: item.image
-        }));
-
-        const snapshot = {
-            items: [...cartItems],
-            totalPrice: totalPrice,
-            finalTotal: finalTotal,
-            shipping: shipping,
-            tax: tax,
-            promoDiscount: promoDiscount,
-            promoApplied: promoApplied,
-            name: name,
-            email: email,
-            address: address,
-            city: city,
-            zip: zip,
-            paymentMode: paymentMode,
-            paymentMethod: finalPaymentMethod,
-            upiId: paymentMethod === "UPI" ? upiId : "",
-            cardLastFour
-        };
-        setOrderSummarySnapshot(snapshot);
 
         try {
-            const res = await createOrder({
-                orderItems: mappedItems,
-                shippingAddress: {
-                    address,
-                    city,
-                    zip
-                },
-                paymentInfo: {
-                    status,
-                    cardLastFour,
-                    paymentMethod: finalPaymentMethod,
-                    paymentMode: paymentMode
-                },
-                totalPrice: finalTotal,
-                shippingPrice: shipping
-            });
 
-            // Use API response to set order details and move to success
-            setOrderNumber(res.order?.orderNumber || res.orderNumber || "N/A");
-            setCreatedOrder(res.order || res);
-            dispatch(clearCart());
-            setStep("success");
-        } catch (error) {
-            console.error("Order placement failed:", error);
-            setStep("form");
-            alert("Failed to place order. Please try again.");
-        } finally {
-            setTimeout(() => setLoading(false), 300); 
+
+            setStep("processing");
+
+
+            // cart items database format
+
+            const mappedItems = cartItems.map((item) => ({
+
+                product: item.id || item._id,
+
+                title: item.title,
+
+                price: item.price,
+
+                quantity: item.quantity,
+
+                image: item.image
+
+            }));
+
+
+            const snapshot = {
+                items: [...cartItems],
+                totalPrice: totalPrice,
+                finalTotal: finalTotal,
+                shipping: shipping,
+                tax: tax,
+                promoDiscount: promoDiscount,
+                promoApplied: promoApplied,
+                name: name,
+                email: email,
+                address: address,
+                city: city,
+                zip: zip,
+                paymentMode: paymentMode,
+                paymentMethod: paymentMode === "Offline" ? "Cash on Delivery" : "Online",
+                cardLastFour: paymentMode === "Offline" ? "COD" : "••••"
+            };
+            setOrderSummarySnapshot(snapshot);
+
+
+            // COD case
+
+            if (paymentMode === "Offline") {
+
+
+                const res = await createOrder({
+
+                    orderItems: mappedItems,
+
+
+                    shippingAddress: {
+                        address,
+                        city,
+                        zip
+                    },
+
+
+                    paymentInfo: {
+
+
+                        status: "Pending",
+
+                        paymentMethod: "Cash on Delivery",
+
+                        paymentMode: "Offline"
+
+                    },
+
+
+                    totalPrice: finalTotal,
+
+
+                    shippingPrice: shipping
+
+
+                });
+
+
+
+                setOrderNumber(
+                    res.order?.orderNumber
+                );
+
+
+                setCreatedOrder(res.order);
+
+
+                dispatch(clearCart());
+
+
+                setStep("success");
+
+
+                return;
+
+            }
+
+
+
+            // ======================
+            // ONLINE PAYMENT
+            // ======================
+
+
+
+            const data = await createPaymentOrderApi(
+                finalTotal
+            );
+
+
+
+            const options = {
+
+
+                key: data.key,
+
+
+                amount: data.order.amount,
+
+
+                currency: "INR",
+
+
+                order_id: data.order.id,
+
+
+                name: "My Store",
+
+
+                description: "Order Payment",
+
+
+                modal: {
+                    ondismiss: function () {
+                        setStep("form");
+                    }
+                },
+
+
+                handler: async function (response) {
+
+
+
+                    const verify = await verifyPaymentApi({
+
+                        razorpay_order_id:
+                            response.razorpay_order_id,
+
+
+                        razorpay_payment_id:
+                            response.razorpay_payment_id,
+
+
+                        razorpay_signature:
+                            response.razorpay_signature
+
+                    });
+
+
+
+                    if (verify.success) {
+
+
+
+                        const order = await createOrder({
+
+                            orderItems: mappedItems,
+
+
+                            shippingAddress: {
+                                address,
+                                city,
+                                zip
+                            },
+
+
+                            paymentInfo: {
+
+
+                                status: "Paid",
+
+
+                                paymentMethod: paymentMethod,
+
+
+                                paymentMode: "Online",
+
+
+                                paymentId:
+                                    response.razorpay_payment_id
+
+                            },
+
+
+                            totalPrice: finalTotal,
+
+
+                            shippingPrice: shipping
+
+
+                        });
+
+
+
+                        setOrderNumber(
+                            order.order?.orderNumber
+                        );
+
+
+
+                        setCreatedOrder(order.order);
+
+
+                        setOrderSummarySnapshot(prev => ({
+                            ...prev,
+                            cardLastFour: response.razorpay_payment_id ? response.razorpay_payment_id.slice(-4) : "••••",
+                            paymentMethod: "Online (Razorpay)"
+                        }));
+
+
+                        dispatch(clearCart());
+
+
+                        setStep("success");
+
+
+                    }
+
+
+
+                }
+
+
+
+            };
+
+
+
+            const razor = new window.Razorpay(options);
+
+
+            razor.open();
+
+
+
         }
+
+        catch (error) {
+
+
+            console.log("Payment Error:", error);
+
+
+            const errorMsg = error.response?.data?.message || error.message || "Payment failed";
+
+
+            setStep("form");
+
+
+            alert(`Payment failed: ${errorMsg}`);
+
+
+        }
+
+
+
     };
-            return (
-                <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
-                    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 animate-fade-in">
-                        {/* Header */}
-                        <div className="mb-6">
-                            <h2 className="text-xl font-bold text-[#2c2420]"><span className="inline-flex items-center gap-2"><svg className="h-5 w-5 text-[#e8622a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg> Secured Checkout</span></h2>
-                            <p className="text-sm text-[#8c7e74] mt-0.5">Please fill in your shipping and payment details.</p>
+    return (
+        <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
+            <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 animate-fade-in">
+                {/* Header */}
+                <div className="mb-6">
+                    <h2 className="text-xl font-bold text-[#2c2420]"><span className="inline-flex items-center gap-2"><svg className="h-5 w-5 text-[#e8622a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg> Secured Checkout</span></h2>
+                    <p className="text-sm text-[#8c7e74] mt-0.5">Please fill in your shipping and payment details.</p>
+                </div>
+
+                {/* Progress Stepper */}
+                <div className="mb-8 max-w-md mx-auto animate-fade-in-up">
+                    <div className="flex items-center justify-between relative">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-full bg-stone-200 -z-10 rounded-full" />
+                        <div 
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-emerald-400 to-emerald-500 -z-10 rounded-full transition-all duration-500" 
+                            style={{ 
+                                width: step === "processing" ? "50%" : step === "success" ? "100%" : "0%" 
+                            }} 
+                        />
+
+                        {/* Step 1: Shipping */}
+                        <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
+                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
+                                step === "form" 
+                                    ? "bg-white border-[#e8622a] text-[#e8622a] shadow-md shadow-[#e8622a]/10" 
+                                    : "bg-gradient-to-r from-[#e8622a] to-[#c44e1e] border-transparent text-white shadow-md shadow-[#e8622a]/10"
+                            }`}>
+                                {step !== "form" ? (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                ) : "1"}
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#2c2420]">Shipping</span>
                         </div>
 
-                        <div className="mb-6 h-px" style={{ background: "#ede8e2" }} />
+                        {/* Step 2: Payment */}
+                        <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
+                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
+                                step === "processing" 
+                                    ? "bg-white border-[#e8622a] text-[#e8622a] shadow-md shadow-[#e8622a]/10" 
+                                    : step === "success"
+                                        ? "bg-gradient-to-r from-[#e8622a] to-[#c44e1e] border-transparent text-white shadow-md shadow-[#e8622a]/10"
+                                        : "bg-white border-stone-200 text-stone-400"
+                            }`}>
+                                {step === "success" ? (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                ) : "2"}
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#8c7e74]">Payment</span>
+                        </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                            {/* Form Details */}
-                            <form onSubmit={handlePlaceOrder} className="lg:col-span-7 space-y-6">
-                                                    {/* Shipping details */}
+                        {/* Step 3: Confirmation */}
+                        <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
+                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
+                                step === "success"
+                                    ? "bg-gradient-to-r from-[#e8622a] to-[#c44e1e] border-transparent text-white shadow-md shadow-[#e8622a]/10"
+                                    : "bg-white border-stone-200 text-stone-400"
+                            }`}>
+                                3
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#8c7e74]">Confirmation</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mb-6 h-px" style={{ background: "#ede8e2" }} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Form Details */}
+                    <form onSubmit={handlePlaceOrder} className="lg:col-span-7 space-y-6">
+                        {/* Shipping details */}
                         <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 space-y-4 shadow-sm">
                             <div className="flex justify-between items-center border-b border-[#f5f3ef] pb-2.5 mb-1">
                                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] flex items-center">
-                                    <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="24px" height="24px" viewBox="0 0 24 24" xmlns="<http://www.w3.org/2000/svg>"><rect x="0" fill="none" width="24" height="24"/><g><path d="M18 8h-2V7c0-1.105-.895-2-2-2H4c-1.105 0-2 .895-2 2v10h2c0 1.657 1.343 3 3 3s3-1.343 3-3h4c0 1.657 1.343 3 3 3s3-1.343 3-3h2v-5l-4-4zM7 18.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5zM4 14V7h10v7H4zm13 4.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5z"/></g></svg> Shipping Information
+                                    <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="24px" height="24px" viewBox="0 0 24 24" xmlns="<http://www.w3.org/2000/svg>"><rect x="0" fill="none" width="24" height="24" /><g><path d="M18 8h-2V7c0-1.105-.895-2-2-2H4c-1.105 0-2 .895-2 2v10h2c0 1.657 1.343 3 3 3s3-1.343 3-3h4c0 1.657 1.343 3 3 3s3-1.343 3-3h2v-5l-4-4zM7 18.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5zM4 14V7h10v7H4zm13 4.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5z" /></g></svg> Shipping Information
                                 </h3>
                                 <button
                                     type="button"
@@ -459,69 +806,69 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                     Use Default Address
                                 </button>
                             </div>
-                                    <div>
-                                        <label className={LABEL_CLS}>Full Name</label>
-                                        <input
-                                            className={FIELD_CLS}
-                                            type="text"
-                                            placeholder="Enter your full name"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={LABEL_CLS}>Email Address</label>
-                                        <input
-                                            className={FIELD_CLS}
-                                            type="email"
-                                            placeholder="you@example.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={LABEL_CLS}>Delivery Address</label>
-                                        <input
-                                            className={FIELD_CLS}
-                                            type="text"
-                                            placeholder="Street Address, Apartment, Suite"
-                                            value={address}
-                                            onChange={(e) => setAddress(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className={LABEL_CLS}>City</label>
-                                            <input
-                                                className={FIELD_CLS}
-                                                type="text"
-                                                placeholder="City Name"
-                                                value={city}
-                                                onChange={(e) => setCity(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className={LABEL_CLS}>ZIP / Postal Code</label>
-                                            <input
-                                                className={FIELD_CLS}
-                                                type="text"
-                                                placeholder="10001"
-                                                value={zip}
-                                                onChange={(e) => setZip(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
+                            <div>
+                                <label className={LABEL_CLS}>Full Name</label>
+                                <input
+                                    className={FIELD_CLS}
+                                    type="text"
+                                    placeholder="Enter your full name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className={LABEL_CLS}>Email Address</label>
+                                <input
+                                    className={FIELD_CLS}
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className={LABEL_CLS}>Delivery Address</label>
+                                <input
+                                    className={FIELD_CLS}
+                                    type="text"
+                                    placeholder="Street Address, Apartment, Suite"
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={LABEL_CLS}>City</label>
+                                    <input
+                                        className={FIELD_CLS}
+                                        type="text"
+                                        placeholder="City Name"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        required
+                                    />
                                 </div>
+                                <div>
+                                    <label className={LABEL_CLS}>ZIP / Postal Code</label>
+                                    <input
+                                        className={FIELD_CLS}
+                                        type="text"
+                                        placeholder="10001"
+                                        value={zip}
+                                        onChange={(e) => setZip(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
-                                                      {/* Payment details */}
+                        {/* Payment details */}
                         <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 space-y-5 shadow-sm">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5 mb-1">
-                                <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" xmlns="<http://www.w3.org/2000/svg>" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+                                <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" xmlns="<http://www.w3.org/2000/svg>" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" /></svg>
                                 Payment Mode & Details
                             </h3>
 
@@ -533,13 +880,12 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                         type="button"
                                         onClick={() => {
                                             setPaymentMode("Online");
-                                            setPaymentMethod("Card"); // switch hone par Card method lagayein
+                                            setPaymentMethod("Online");
                                         }}
-                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                                            paymentMode === "Online"
+                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${paymentMode === "Online"
                                                 ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
                                                 : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
-                                        }`}
+                                            }`}
                                     >
                                         <svg className="w-6 h-6 mb-1.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h2a2.5 2.5 0 002.5-2.5V10a2 2 0 00-2-2h-1.07a2 2 0 01-1.414-.586l-2.828-2.828A2 2 0 009.586 4H8z" />
@@ -553,11 +899,10 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                             setPaymentMode("Offline");
                                             setPaymentMethod("Cash on Delivery");
                                         }}
-                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                                            paymentMode === "Offline"
+                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${paymentMode === "Offline"
                                                 ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
                                                 : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
-                                        }`}
+                                            }`}
                                     >
                                         <svg className="w-6 h-6 mb-1.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -569,219 +914,188 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
 
                             {/* Conditional Forms base on Mode */}
                             {paymentMode === "Online" ? (
-                                <div className="space-y-4 pt-2">
-                                    {/* Card vs UPI Selection */}
-                                    <div>
-                                        <label className={LABEL_CLS}>Online Payment Method</label>
-                                        <div className="flex gap-6">
-                                            <label className="flex items-center gap-2 text-sm text-[#2c2420] font-medium cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="onlineMethod"
-                                                    value="Card"
-                                                    checked={paymentMethod === "Card"}
-                                                    onChange={() => setPaymentMethod("Card")}
-                                                    className="w-4 h-4 text-[#e8622a] focus:ring-[#e8622a]"
-                                                />
-                                                Pay with Card
-                                            </label>
-                                            <label className="flex items-center gap-2 text-sm text-[#2c2420] font-medium cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="onlineMethod"
-                                                    value="UPI"
-                                                    checked={paymentMethod === "UPI"}
-                                                    onChange={() => setPaymentMethod("UPI")}
-                                                    className="w-4 h-4 text-[#e8622a] focus:ring-[#e8622a]"
-                                                />
-                                                Pay with UPI
-                                            </label>
-                                        </div>
+                                <div className="rounded-xl border border-orange-100 bg-orange-50/20 p-4 animate-scale-in flex gap-3 items-start">
+                                    <div className="p-2 rounded-lg bg-orange-50 text-[#e8622a] border border-orange-100 shrink-0">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
                                     </div>
-
-                                    {/* Card Inputs render tab */}
-                                    {paymentMethod === "Card" && (
-                                        <div className="space-y-4 animate-fade-in">
-                                            <div>
-                                                <label className={LABEL_CLS}>Cardholder Name</label>
-                                                <input
-                                                    className={FIELD_CLS}
-                                                    type="text"
-                                                    placeholder="Name as it appears on your card"
-                                                    value={cardName}
-                                                    onChange={(e) => setCardName(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className={LABEL_CLS}>Card Number</label>
-                                                <input
-                                                    className={FIELD_CLS}
-                                                    type="text"
-                                                    placeholder="0000 0000 0000 0000"
-                                                    value={cardNumber}
-                                                    onChange={(e) => setCardNumber(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className={LABEL_CLS}>Expiration Date</label>
-                                                    <input
-                                                        className={FIELD_CLS}
-                                                        type="text"
-                                                        placeholder="MM/YY"
-                                                        value={cardExpiry}
-                                                        onChange={(e) => setCardExpiry(e.target.value)}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className={LABEL_CLS}>CVV / CVC</label>
-                                                    <input
-                                                        className={FIELD_CLS}
-                                                        type="text"
-                                                        placeholder="123"
-                                                        value={cardCvv}
-                                                        onChange={(e) => setCardCvv(e.target.value)}
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* UPI Input render tab */}
-                                    {paymentMethod === "UPI" && (
-                                        <div className="space-y-2 animate-fade-in">
-                                            <label className={LABEL_CLS}>UPI ID / VPA</label>
-                                            <input
-                                                className={FIELD_CLS}
-                                                type="text"
-                                                placeholder="username@bank or mobileNumber@upi"
-                                                value={upiId}
-                                                onChange={(e) => setUpiId(e.target.value)}
-                                                required
-                                            />
-                                            <p className="text-[10px] text-[#8c7e74]">Order click karne ke baad aapke mobile app par request aayegi.</p>
-                                        </div>
-                                    )}
+                                    <div className="text-xs space-y-1">
+                                        <h4 className="font-bold text-[#2c2420]">Pay Securely via Razorpay</h4>
+                                        <p className="text-[#8c7e74] leading-relaxed">
+                                            Clicking "Place Order" will open Razorpay's secure checkout gateway overlay. You can pay seamlessly using <strong>UPI, Cards (Visa, Mastercard, RuPay), Netbanking, or Wallets</strong>.
+                                        </p>
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs flex items-start gap-2.5 animate-fade-in">
-                                    <svg className="w-4.5 h-4.5 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <div>
-                                        <span className="font-bold block mb-0.5">Cash on Delivery (COD) Selected</span>
-                                        A ₹20 charge will be applied for Cash on Delivery orders.
+                                <div className="rounded-xl border border-stone-200 bg-stone-50/40 p-4 animate-scale-in flex gap-3 items-start">
+                                    <div className="p-2 rounded-lg bg-stone-100 text-[#8c7e74] border border-stone-200 shrink-0">
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div className="text-xs space-y-1">
+                                        <h4 className="font-bold text-[#2c2420]">Cash on Delivery (COD)</h4>
+                                        <p className="text-[#8c7e74] leading-relaxed font-medium">
+                                            Your order will be processed. You can pay with cash or digitial scanner apps at the time of delivery.
+                                        </p>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                                {/* Action buttons */}
+                        {/* Action buttons */}
+                        <button
+                            type="submit"
+                            className="btn-glow flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#e8622a]/20 transition-all"
+                        >
+                            Place Order · ${finalTotal.toFixed(2)}
+                        </button>
+                    </form>
+
+                    {/* Order Summary */}
+                    <div className="lg:col-span-5 space-y-6">
+                        {/* Summary List */}
+                        <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 shadow-sm space-y-4">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5">
+                                <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="800px" height="800px" viewBox="-5.25 0 50 50" xmlns="http://www.w3.org/2000/svg"><g id="Group_19" data-name="Group 19" transform="translate(-1219.44 -717.022)"><path id="Path_50" data-name="Path 50" d="M1256.94,765.022h-35.5v-46h21.25l14.25,15.75Z" fill="#ffffff" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><path id="Path_51" data-name="Path 51" d="M1241.69,720.022v14.75h14.25" fill="#d1d3d4" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><line id="Line_28" data-name="Line 28" x2="20.75" transform="translate(1227.69 757.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><line id="Line_29" data-name="Line 29" x2="10.75" transform="translate(1227.69 749.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /></g></svg> Order Summary
+                            </h3>
+
+                            {/* Items Scroll area */}
+                            <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                                {cartItems.map((item) => (
+                                    <div key={item.id} className="flex gap-3 items-center text-xs">
+                                        <div className="h-12 w-12 rounded-lg border border-[#ede8e2] bg-white p-1 flex items-center justify-center shrink-0">
+                                            <img src={item.image} alt={item.title} className="max-h-full max-w-full object-contain" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-semibold text-[#2c2420] truncate">{item.title}</p>
+                                            <p className="text-[#8c7e74] mt-0.5">Qty: {item.quantity} · ${item.price.toFixed(2)} each</p>
+                                        </div>
+                                        <span className="font-bold text-[#2c2420] shrink-0">
+                                            ${(item.price * item.quantity).toFixed(2)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="h-px bg-[#ede8e2] my-4" />
+
+                            {/* Apply Promo Form */}
+                            <form onSubmit={handleApplyPromo} className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Enter Promo Code(optional)"
+                                    className="flex-1 rounded-xl border border-[#ede8e2] bg-white px-3 py-2 text-xs text-[#2c2420] placeholder-[#bcae9e] outline-none"
+                                    value={promoInput}
+                                    onChange={(e) => setPromoInput(e.target.value)}
+                                    disabled={promoApplied}
+                                />
                                 <button
                                     type="submit"
-                                    className="btn-glow flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#e8622a]/20 transition-all"
+                                    className="rounded-xl bg-[#2c2420] px-4 py-2 text-xs font-bold text-white hover:bg-[#3d3028] disabled:opacity-50 cursor-pointer shrink-0"
+                                    disabled={promoApplied || !promoInput.trim()}
                                 >
-                                    Place Order · ${finalTotal.toFixed(2)}
+                                    Apply
                                 </button>
                             </form>
+                            {promoApplied && (
+                                <p className="text-[10px] font-bold text-emerald-600 mt-2">✓ {appliedPromoCode} Code Applied ({appliedPromoDiscountText} Discount)!</p>
+                            )}
+                            {promoError && (
+                                <p className="text-[10px] font-bold text-rose-500 mt-2">{promoError}</p>
+                            )}
 
-                            {/* Order Summary */}
-                            <div className="lg:col-span-5 space-y-6">
-                                {/* Summary List */}
-                                <div className="rounded-2xl border border-[#ede8e2] bg-white p-5 md:p-6 shadow-sm space-y-4">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#2c2420] border-b border-[#f5f3ef] pb-2.5">
-                                        <svg className="h-5 w-5 inline-block mr-2 text-[#e8622a]" width="800px" height="800px" viewBox="-5.25 0 50 50" xmlns="http://www.w3.org/2000/svg"><g id="Group_19" data-name="Group 19" transform="translate(-1219.44 -717.022)"><path id="Path_50" data-name="Path 50" d="M1256.94,765.022h-35.5v-46h21.25l14.25,15.75Z" fill="#ffffff" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><path id="Path_51" data-name="Path 51" d="M1241.69,720.022v14.75h14.25" fill="#d1d3d4" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><line id="Line_28" data-name="Line 28" x2="20.75" transform="translate(1227.69 757.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /><line id="Line_29" data-name="Line 29" x2="10.75" transform="translate(1227.69 749.272)" fill="none" stroke="#231f20" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" /></g></svg> Order Summary
-                                    </h3>
-
-                                    {/* Items Scroll area */}
-                                    <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-                                        {cartItems.map((item) => (
-                                            <div key={item.id} className="flex gap-3 items-center text-xs">
-                                                <div className="h-12 w-12 rounded-lg border border-[#ede8e2] bg-white p-1 flex items-center justify-center shrink-0">
-                                                    <img src={item.image} alt={item.title} className="max-h-full max-w-full object-contain" />
+                            {/* Available Coupon Carousel Card List */}
+                            {offers.length > 0 && (
+                                <div className="space-y-2 mt-4 pt-4 border-t border-[#ede8e2]">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-[#8c7e74] block">Available Offers (Click to Apply)</span>
+                                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                                        {offers.map((offer) => {
+                                            const activeOffer = promoApplied && appliedPromoCode === offer.code;
+                                            return (
+                                                <div 
+                                                    key={offer._id} 
+                                                    className={`p-3 rounded-xl border border-dashed text-left cursor-pointer shrink-0 w-44 hover:bg-stone-50 transition-all ${
+                                                        activeOffer 
+                                                            ? "border-emerald-500 bg-emerald-50/20" 
+                                                            : "border-orange-200 bg-orange-50/10"
+                                                    }`}
+                                                    onClick={() => {
+                                                        if (!promoApplied) {
+                                                            setAppliedPromoCode(offer.code);
+                                                            setAppliedPromoDiscountText(offer.discount);
+                                                            let pct = 0.0;
+                                                            const match = offer.discount.match(/(\d+)%/);
+                                                            if (match) {
+                                                                pct = Number(match[1]) / 100;
+                                                            }
+                                                            setAppliedDiscountPct(pct);
+                                                            setPromoApplied(true);
+                                                            setPromoError("");
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex justify-between items-start gap-1">
+                                                        <span className="text-[10px] font-black text-[#e8622a] bg-[#e8622a]/5 px-2 py-0.5 rounded border border-[#e8622a]/10 font-mono uppercase">
+                                                            {offer.code}
+                                                        </span>
+                                                        {activeOffer && (
+                                                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 uppercase">
+                                                                Applied
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h4 className="text-[11px] font-bold text-[#2c2420] mt-2 truncate">{offer.title}</h4>
+                                                    <p className="text-[9px] text-[#8c7e74] mt-0.5 line-clamp-2 leading-relaxed">{offer.description}</p>
+                                                    <span className="text-[10px] font-bold text-[#e8622a] mt-1.5 block">{offer.discount} OFF</span>
                                                 </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-[#2c2420] truncate">{item.title}</p>
-                                                    <p className="text-[#8c7e74] mt-0.5">Qty: {item.quantity} · ${item.price.toFixed(2)} each</p>
-                                                </div>
-                                                <span className="font-bold text-[#2c2420] shrink-0">
-                                                    ${(item.price * item.quantity).toFixed(2)}
-                                                </span>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
+                                </div>
+                            )}
 
-                                    <div className="h-px bg-[#ede8e2] my-4" />
+                            <div className="h-px bg-[#ede8e2] my-4" />
 
-                                    {/* Apply Promo Form */}
-                                    <form onSubmit={handleApplyPromo} className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Enter Promo Code(optional)"
-                                            className="flex-1 rounded-xl border border-[#ede8e2] bg-white px-3 py-2 text-xs text-[#2c2420] placeholder-[#bcae9e] outline-none"
-                                            value={promoInput}
-                                            onChange={(e) => setPromoInput(e.target.value)}
-                                            disabled={promoApplied}
-                                        />
-                                        <button
-                                            type="submit"
-                                            className="rounded-xl bg-[#2c2420] px-4 py-2 text-xs font-bold text-white hover:bg-[#3d3028] disabled:opacity-50 cursor-pointer shrink-0"
-                                            disabled={promoApplied || !promoInput.trim()}
-                                        >
-                                            Apply
-                                        </button>
-                                    </form>
-                                    {promoApplied && (
-                                        <p className="text-[10px] font-bold text-emerald-600">✓ {appliedPromoCode} Code Applied ({appliedPromoDiscountText} Discount)!</p>
+                            {/* Price Breakdown */}
+                            <div className="space-y-2.5 text-xs text-[#8c7e74]">
+                                <div className="flex justify-between">
+                                    <span>Subtotal ({totalCount} item{totalCount !== 1 ? "s" : ""})</span>
+                                    <span className="font-semibold text-[#2c2420]">${totalPrice.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Shipping</span>
+                                    {shipping === 0 ? (
+                                        <span className="font-bold text-[#2c7a4a]">Free</span>
+                                    ) : (
+                                        <span className="font-semibold text-[#2c2420]">${shipping.toFixed(2)}</span>
                                     )}
-                                    {promoError && (
-                                        <p className="text-[10px] font-bold text-rose-500">{promoError}</p>
-                                    )}
-
-                                    <div className="h-px bg-[#ede8e2] my-4" />
-
-                                    {/* Price Breakdown */}
-                                    <div className="space-y-2.5 text-xs text-[#8c7e74]">
-                                        <div className="flex justify-between">
-                                            <span>Subtotal ({totalCount} item{totalCount !== 1 ? "s" : ""})</span>
-                                            <span className="font-semibold text-[#2c2420]">${totalPrice.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Shipping</span>
-                                            {shipping === 0 ? (
-                                                <span className="font-bold text-[#2c7a4a]">Free</span>
-                                            ) : (
-                                                <span className="font-semibold text-[#2c2420]">${shipping.toFixed(2)}</span>
-                                            )}
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Tax (10%)</span>
-                                            <span className="font-semibold text-[#2c2420]">${tax.toFixed(2)}</span>
-                                        </div>
-                                        {promoApplied && (
-                                            <div className="flex justify-between text-emerald-600 font-medium">
-                                                <span>Promo Discount ({appliedPromoDiscountText})</span>
-                                                <span>-${promoDiscount.toFixed(2)}</span>
-                                            </div>
-                                        )}
-                                        <div className="h-px bg-gradient-to-r from-transparent via-[#ede8e2] to-transparent my-1" />
-                                        <div className="flex items-center justify-between text-sm font-bold">
-                                            <span className="text-[#2c2420]">Total</span>
-                                            <span className="text-lg text-[#e8622a]">
-                                                ${finalTotal.toFixed(2)}
-                                            </span>
-                                        </div>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Tax (10%)</span>
+                                    <span className="font-semibold text-[#2c2420]">${tax.toFixed(2)}</span>
+                                </div>
+                                {promoApplied && (
+                                    <div className="flex justify-between text-emerald-600 font-medium">
+                                        <span>Promo Discount ({appliedPromoDiscountText})</span>
+                                        <span>-${promoDiscount.toFixed(2)}</span>
                                     </div>
+                                )}
+                                <div className="h-px bg-gradient-to-r from-transparent via-[#ede8e2] to-transparent my-1" />
+                                <div className="flex items-center justify-between text-sm font-bold">
+                                    <span className="text-[#2c2420]">Total</span>
+                                    <span className="text-lg text-[#e8622a]">
+                                        ${finalTotal.toFixed(2)}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            );
-        };
+            </div>
+        </div>
+    );
+};
 
-        export default Checkout;
+export default Checkout;

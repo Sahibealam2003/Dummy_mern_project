@@ -348,8 +348,6 @@ function App() {
 
 
 
-
-
   const requestPermission = async () => {
     try {
       const permission = await Notification.requestPermission();

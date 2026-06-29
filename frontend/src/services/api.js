@@ -110,4 +110,25 @@ export const deleteOrderApi = async (id) => {
     const response = await API.delete(`/orders/${id}`);
     return response.data;
 };
-    
+   
+export const createPaymentOrderApi = async (amount)=>{
+
+    const response = await API.post(
+        "/payment/create-order",
+        {amount}
+    );
+
+    return response.data;
+}
+
+export const verifyPaymentApi = async(paymentData)=>{
+
+    const response = await API.post(
+        "/payment/verify",
+        paymentData
+    );
+
+
+    return response.data;
+
+}

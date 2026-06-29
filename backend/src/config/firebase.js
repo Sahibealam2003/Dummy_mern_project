@@ -9,7 +9,18 @@ const __dirname = path.dirname(__filename);
 
 let serviceAccount;
 
-if (process.env.FIREBASE_PRIVATE_KEY) {
+if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+        if (serviceAccount.private_key) {
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+        }
+    } catch (error) {
+        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON env variable:", error);
+    }
+}
+
+if (!serviceAccount && process.env.FIREBASE_PRIVATE_KEY) {
     serviceAccount = {
         type: process.env.FIREBASE_TYPE,
         project_id: process.env.FIREBASE_PROJECT_ID,
@@ -24,7 +35,9 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
         client_x509_cert_url:
             process.env.FIREBASE_CLIENT_CERT_URL
     };
-} else {
+}
+
+if (!serviceAccount) {
     try {
         const keyPath = path.join(__dirname, "../../serviceAccountKey.json");
         if (fs.existsSync(keyPath)) {

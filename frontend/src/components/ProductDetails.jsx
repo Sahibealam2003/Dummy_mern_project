@@ -116,7 +116,7 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
         <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[#2c2420]/50">
             <div className="absolute inset-0 cursor-pointer" onClick={onClose} />
 
-            <div 
+            <div
                 className="animate-scale-in relative w-full max-w-3xl overflow-hidden rounded-xl p-6 md:p-8 border border-white/70"
                 style={{
                     background: "linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(253, 251, 249, 0.98) 100%)",
@@ -201,7 +201,7 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
                                             ${product.price?.toFixed(2)}
                                         </span>
                                     </div>
-                                    
+
                                     {/* Center: Add to Cart / Qty selector */}
                                     <div className="flex justify-center">
                                         {isAdmin && product && (
@@ -262,7 +262,7 @@ const ProductDetails = ({ product: initialProduct, onClose, onDeleteSuccess }) =
                                             )
                                         )}
                                     </div>
-                                    
+
                                     {/* Right: Return / Close button */}
                                     <div className="flex justify-end">
                                         <button

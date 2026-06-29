@@ -1,21 +1,22 @@
-import React from "react";
-import { 
-    AreaChart, 
-    Area, 
-    XAxis, 
-    YAxis, 
-    Tooltip, 
+import React, { useEffect, useRef } from "react";
+import gsap from "gsap";
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    Tooltip,
     ResponsiveContainer,
     PieChart,
     Pie,
     Cell
 } from "recharts";
-import { 
-    TrendingUp, 
-    Users, 
-    CreditCard, 
-    Activity, 
-    ArrowUpRight, 
+import {
+    TrendingUp,
+    Users,
+    CreditCard,
+    Activity,
+    ArrowUpRight,
     DollarSign,
     CheckCircle,
     Clock,
@@ -41,8 +42,24 @@ const billingData = [
 ];
 
 export function Dashboard() {
+    const dashboardRef = useRef(null);
+
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            gsap.fromTo(".kpi-card-anim",
+                { scale: 0.9, opacity: 0 },
+                { scale: 1, opacity: 1, duration: 0.6, stagger: 0.08, ease: "back.out(1.5)" }
+            );
+            gsap.fromTo(".chart-card-anim, .pie-card-anim",
+                { y: 30, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", delay: 0.3 }
+            );
+        }, dashboardRef);
+        return () => ctx.revert();
+    }, []);
+
     return (
-        <div className="space-y-6">
+        <div ref={dashboardRef} className="space-y-6">
             {/* Header info */}
             <div>
                 <h1 className="text-2xl font-black tracking-tight text-[#2c2420]">
@@ -56,7 +73,7 @@ export function Dashboard() {
             {/* KPI grid row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Net Revenue KPI */}
-                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between kpi-card-anim">
                     <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[#8c7e74]">Net Revenue</span>
                         <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
@@ -72,7 +89,7 @@ export function Dashboard() {
                 </div>
 
                 {/* Subscriptions KPI */}
-                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between kpi-card-anim">
                     <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[#8c7e74]">Active Accounts</span>
                         <div className="p-2 rounded-xl bg-orange-50 text-[#e8622a] border border-orange-100">
@@ -88,7 +105,7 @@ export function Dashboard() {
                 </div>
 
                 {/* Billing health rate */}
-                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between kpi-card-anim">
                     <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[#8c7e74]">Billing Health</span>
                         <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
@@ -104,7 +121,7 @@ export function Dashboard() {
                 </div>
 
                 {/* Performance score */}
-                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between kpi-card-anim">
                     <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[#8c7e74]">Conversion Rate</span>
                         <div className="p-2 rounded-xl bg-purple-50 text-purple-600 border border-purple-100">
@@ -123,7 +140,7 @@ export function Dashboard() {
             {/* Charts & KPI breakdowns row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Revenue Trend chart */}
-                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm lg:col-span-2">
+                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm lg:col-span-2 chart-card-anim">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-sm font-black text-[#2c2420]">Net Revenue Trend</h3>
@@ -139,20 +156,20 @@ export function Dashboard() {
                             <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#e8622a" stopOpacity={0.15}/>
-                                        <stop offset="95%" stopColor="#e8622a" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#e8622a" stopOpacity={0.15} />
+                                        <stop offset="95%" stopColor="#e8622a" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <XAxis dataKey="name" stroke="#8c7e74" fontSize={10} tickLine={false} axisLine={false} />
                                 <YAxis stroke="#8c7e74" fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        background: "rgba(255,255,255,0.95)", 
-                                        borderRadius: 12, 
+                                <Tooltip
+                                    contentStyle={{
+                                        background: "rgba(255,255,255,0.95)",
+                                        borderRadius: 12,
                                         border: "1px solid #ede8e2",
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                                         fontSize: 11
-                                    }} 
+                                    }}
                                 />
                                 <Area type="monotone" dataKey="revenue" stroke="#e8622a" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
                             </AreaChart>
@@ -161,7 +178,7 @@ export function Dashboard() {
                 </div>
 
                 {/* Billing health visual widget */}
-                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-2xl border border-[#ede8e2] p-6 shadow-sm flex flex-col justify-between pie-card-anim">
                     <div>
                         <h3 className="text-sm font-black text-[#2c2420] mb-1">Billing Health</h3>
                         <p className="text-[10px] text-[#8c7e74] font-medium">Invoice settlement and resolution efficiency.</p>

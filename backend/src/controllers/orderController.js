@@ -151,6 +151,10 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(404).json({ error: "Order not found" });
         }
 
+        if (order.orderStatus === "Cancelled" || order.orderStatus === "Delivered") {
+            return res.status(400).json({ error: `Cannot change status. Order is already ${order.orderStatus}.` });
+        }
+
         order.orderStatus = status;
         await order.save();
 
@@ -327,22 +331,25 @@ export const cancelOrder = async (req, res) => {
         if (order.user._id.toString() !== req.user._id.toString()) {
             return res.status(403).json({ error: "You cannot cancel this order" })
         }
+        if (order.orderStatus === 'Cancelled') {
+            return res.status(400).json({ error: "Order is already cancelled" })
+        }
         if (order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') {
             return res.status(400).json({ error: "you cannot cancel this order as its already shipped or delivered" })
         }
         order.orderStatus = 'Cancelled'
         await order.save()
-         try {
-                        await sendNotification(
-                            order.user.fcmToken,
-                            "Order Status",
-                            "Your Order Has Been Cancelled"
-                        );
-                        console.log('Cancelled notification sent successfully')
+        try {
+            await sendNotification(
+                order.user.fcmToken,
+                "Order Status",
+                "Your Order Has Been Cancelled"
+            );
+            console.log('Cancelled notification sent successfully')
 
-                    } catch (error) {
-                        console.log("error")
-                    }
+        } catch (error) {
+            console.log("error")
+        }
         await emailQueue.add("email", {
             type: "CANCEL_ORDER",
             data: {
@@ -361,18 +368,18 @@ export const cancelOrder = async (req, res) => {
 
 
 //Delete order 
-export const deleteOrder = async (req,res) => {
+export const deleteOrder = async (req, res) => {
     try {
-        const {id} = req.params;
-        if(!id)
-            return res.status(400).json({error:"Order ID is required"})
+        const { id } = req.params;
+        if (!id)
+            return res.status(400).json({ error: "Order ID is required" })
 
         const order = await Order.findById(id);
-        if(!order)
-            return res.status(404).json({error:"Order not found"});
-        
-        if (order.orderStatus === "pending" || order.orderStatus === "processing") {
-          return res.status(400).json({ error: "Cannot delete order that is pending ,placed, processing and shipped"});
+        if (!order)
+            return res.status(404).json({ error: "Order not found" });
+
+        if (["Pending", "Placed", "Processing", "Shipped"].includes(order.orderStatus)) {
+            return res.status(400).json({ error: "Cannot delete order that is pending, placed, processing, or shipped" });
         }
         await Order.findByIdAndDelete(id);
         res.status(200).json({ success: true, message: "Order deleted successfully" });

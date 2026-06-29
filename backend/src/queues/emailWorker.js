@@ -40,6 +40,13 @@ const worker = new Worker(
                 email = orderUnderProcessingEmail(data);
                 break
 
+            case "CRM_MESSAGE":
+                email = {
+                    subject: data.subject,
+                    html: data.html
+                };
+                break;
+
         }
         await transporter.sendMail({
             from: process.env.SMTP_MAIL,

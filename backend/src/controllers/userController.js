@@ -580,7 +580,7 @@ export const saveToken = async (req, res) => {
 
         const user = await User.findByIdAndUpdate(
             req.user._id, 
-            { fcmToken: token }, 
+            { fcmToken: token === "none" ? null : token }, 
             { new: true }
         );
 
@@ -595,4 +595,117 @@ export const saveToken = async (req, res) => {
         console.error(error);
         res.status(500).json({ error});
     }
-}
+};
+
+// Get all users for admin dashboard (CRM)
+export const getAllUsersForAdmin = async (req, res) => {
+    try {
+        const users = await User.find({}).sort({ createdAt: -1 });
+        res.status(200).json(users);
+    } catch (error) {
+        console.error("Error fetching users for admin:", error);
+        res.status(500).json({ error: "Failed to fetch users" });
+    }
+};
+
+// Update user role (Admin only)
+export const updateUserRole = async (req, res) => {
+    try {
+        const { role } = req.body;
+        if (!role || !["user", "admin"].includes(role)) {
+            return res.status(400).json({ error: "Invalid role specified" });
+        }
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        user.role = role;
+        await user.save();
+
+        res.status(200).json({ success: true, message: `User role updated to ${role} successfully`, user });
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        res.status(500).json({ error: "Failed to update user role" });
+    }
+};
+
+// Delete user account (Admin only)
+export const deleteUserByAdmin = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        if (user._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ error: "You cannot delete your own admin account" });
+        }
+
+        await User.findByIdAndDelete(req.params.id);
+        res.status(200).json({ success: true, message: "User deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ error: "Failed to delete user" });
+    }
+};
+
+// CRM Send Broadcast Email (Admin only)
+export const sendBroadcastEmail = async (req, res) => {
+    try {
+        const { emails, subject, message } = req.body;
+        if (!emails || !Array.isArray(emails) || emails.length === 0 || !subject || !message) {
+            return res.status(400).json({ error: "Emails list, subject, and message are required" });
+        }
+
+        // Add email sending jobs to the queue
+        for (const emailAddress of emails) {
+            await emailQueue.add("sendEmail", {
+                type: "CRM_MESSAGE",
+                data: {
+                    email: emailAddress.trim().toLowerCase(),
+                    subject,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #2c2420;">
+                            <h2 style="color: #e8622a; border-bottom: 2px solid #ede8e2; padding-bottom: 10px;">Message from ShopX</h2>
+                            <p>${message.replace(/\n/g, "<br>")}</p>
+                            <br>
+                            <p style="font-size: 11px; color: #8c7e74; border-top: 1px solid #ede8e2; padding-top: 10px;">
+                                You are receiving this email as a registered customer of ShopX.
+                            </p>
+                        </div>
+                    `
+                }
+            });
+        }
+
+        res.status(200).json({ success: true, message: `Successfully queued ${emails.length} emails for sending` });
+    } catch (error) {
+        console.error("Error sending CRM broadcast email:", error);
+        res.status(500).json({ error: "Failed to broadcast email" });
+    }
+};
+
+// CRM Send Push Notification (Admin only)
+export const sendCRMNotification = async (req, res) => {
+    try {
+        const { fcmTokens, title, body } = req.body;
+        if (!fcmTokens || !Array.isArray(fcmTokens) || fcmTokens.length === 0 || !title || !body) {
+            return res.status(400).json({ error: "Tokens list, title, and body are required" });
+        }
+
+        const { sendNotification } = await import("../utils/sendNotification.js");
+
+        for (const token of fcmTokens) {
+            if (token) {
+                await sendNotification(token, title, body);
+            }
+        }
+
+        res.status(200).json({ success: true, message: `Successfully sent ${fcmTokens.length} notifications` });
+    } catch (error) {
+        console.error("Error sending CRM push notifications:", error);
+        res.status(500).json({ error: "Failed to send notifications" });
+    }
+};

@@ -19,6 +19,6 @@ router.get("/:id", protect, getOrderById);
 
 router.get("/all/list", protect, admin, getAllOrders);
 router.put("/:id/status", protect, admin, updateOrderStatus);
-router.put("/:id/cancel",protect,cancelOrder);
-router.delete("/:id",protect,deleteOrder);
+router.put("/:id/cancel", protect, cancelOrder);
+router.delete("/:id", protect, deleteOrder);
 export default router;

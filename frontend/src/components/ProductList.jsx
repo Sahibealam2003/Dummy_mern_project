@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import gsap from "gsap";
 import { getAllProducts } from "../services/api";
 import ProductCard from "./ProductCard";
 import ProductDetails from "./ProductDetails";
@@ -41,11 +42,26 @@ const SLIDES = [
 
 const HeroBanner = () => {
     const [current, setCurrent] = useState(0);
+    const heroRef = useRef(null);
 
     useEffect(() => {
         const t = setInterval(() => setCurrent(c => (c + 1) % SLIDES.length), 5000);
         return () => clearInterval(t);
     }, []);
+
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            gsap.fromTo(".hero-text-anim",
+                { y: 15, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: "power2.out" }
+            );
+            gsap.fromTo(".hero-promo-anim",
+                { x: 20, opacity: 0 },
+                { x: 0, opacity: 1, duration: 0.6, ease: "power2.out", delay: 0.2 }
+            );
+        }, heroRef);
+        return () => ctx.revert();
+    }, [current]);
 
     const handleCtaClick = () => {
         const target = document.getElementById("product-section");
@@ -76,32 +92,33 @@ const HeroBanner = () => {
 
                     {/* Main slide */}
                     <div
+                        ref={heroRef}
                         className="flex-1 rounded-xl p-6 md:p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500 shadow-sm"
                         style={{ background: slide.bg }}
                     >
                         {/* Content side */}
                         <div className="relative z-10 max-w-md flex flex-col justify-between h-full text-left">
                             <div>
-                                <span className="inline-block rounded-full bg-white/20 border border-white/10 px-3 py-1 text-[9px] font-extrabold uppercase tracking-widest text-white mb-2">
+                                <span className="hero-text-anim inline-block rounded-full bg-white/20 border border-white/10 px-3 py-1 text-[9px] font-extrabold uppercase tracking-widest text-white mb-2">
                                     {slide.tag}
                                 </span>
-                                <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white leading-tight">
+                                <h2 className="hero-text-anim text-2xl md:text-3xl font-black tracking-tight text-white leading-tight">
                                     {slide.headline}
                                 </h2>
-                                <p className="text-xs md:text-sm text-white/90 font-medium mt-1">
+                                <p className="hero-text-anim text-xs md:text-sm text-white/90 font-medium mt-1">
                                     {slide.sub}
                                 </p>
                             </div>
-                            <button 
+                            <button
                                 onClick={handleCtaClick}
-                                className="btn-glow inline-flex w-fit items-center justify-center gap-1.5 rounded-xl bg-white px-5 py-2 text-xs font-bold text-[#2c2420] hover:bg-[#fcfaf7] active:scale-95 transition-all mt-4 cursor-pointer"
+                                className="hero-text-anim btn-glow inline-flex w-fit items-center justify-center gap-1.5 rounded-xl bg-white px-5 py-2 text-xs font-bold text-[#2c2420] hover:bg-[#fcfaf7] active:scale-95 transition-all mt-4 cursor-pointer"
                             >
                                 {slide.cta} →
                             </button>
                         </div>
 
                         {/* Text instead of Image */}
-                        <div className="absolute right-8 top-6 bottom-6 left-[55%] hidden md:flex flex-col justify-center text-left text-white border-l border-white/20 pl-8 pointer-events-none">
+                        <div className="hero-promo-anim absolute right-8 top-6 bottom-6 left-[55%] hidden md:flex flex-col justify-center text-left text-white border-l border-white/20 pl-8 pointer-events-none">
                             <span className="text-[9px] font-black uppercase tracking-wider bg-white/15 px-2 py-0.5 rounded-md self-start mb-2">
                                 Special Promotion
                             </span>
@@ -150,17 +167,17 @@ const ProductList = () => {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    
+
     // Search states (debounced)
     const [searchTerm, setSearchTerm] = useState("");
     const [search, setSearch] = useState("");
-    
+
     // Filters & Sorting states
     const [categoryFilter, setCategoryFilter] = useState("");
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
     const [sort, setSort] = useState("newest");
-    
+
     // Pagination states
     const [page, setPage] = useState(1);
     const [pages, setPages] = useState(1);
@@ -173,6 +190,40 @@ const ProductList = () => {
     const categories = ["All", "electronics", "jewelery", "men's clothing", "women's clothing"];
 
     const sentinelRef = useRef(null);
+    const gridRef = useRef(null);
+    const contentRef = useRef(null);
+
+    // Staggered load animation for products list
+    useEffect(() => {
+        if (!loading && products.length > 0) {
+            const ctx = gsap.context(() => {
+                gsap.fromTo(".product-card-anim",
+                    { y: 35, opacity: 0 },
+                    { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: "power2.out" }
+                );
+            }, gridRef);
+            return () => ctx.revert();
+        }
+    }, [products, loading]);
+
+    // Initial mount animations for search & filters
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            gsap.fromTo(".search-container-anim",
+                { y: 25, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }
+            );
+            gsap.fromTo(".category-pill-anim",
+                { scale: 0.9, opacity: 0 },
+                { scale: 1, opacity: 1, duration: 0.5, stagger: 0.06, ease: "back.out(1.5)", delay: 0.25 }
+            );
+            gsap.fromTo(".filter-bar-anim",
+                { y: 30, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.15 }
+            );
+        }, contentRef);
+        return () => ctx.revert();
+    }, []);
 
     const loadAllProductsOnce = async () => {
         try {
@@ -189,7 +240,7 @@ const ProductList = () => {
         } else {
             setLoading(true);
         }
-        
+
         try {
             const params = {
                 search,
@@ -202,7 +253,7 @@ const ProductList = () => {
             if (maxPrice !== "") params.maxPrice = Number(maxPrice);
 
             const data = await getAllProducts(params);
-            
+
             if (shouldAppend) {
                 setProducts(prev => [...prev, ...(data.products || [])]);
             } else {
@@ -271,12 +322,12 @@ const ProductList = () => {
     const filtered = products; // maintains compatibility with mapping below
 
     return (
-        <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
+        <div ref={contentRef} style={{ background: "#f5f3ef", minHeight: "100vh" }}>
             {/* Hero */}
             <HeroBanner />
 
             {/* Prominent Search Section */}
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 mt-8 animate-fade-in">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 mt-8 animate-fade-in search-container-anim">
                 <div className="relative rounded-3xl p-6 md:p-8 flex flex-col items-center text-center overflow-hidden shadow-sm border border-[#ede8e2]" style={{ background: "linear-gradient(135deg, #fdfbf9 0%, #f7f4f0 100%)" }}>
                     {/* Background subtle glow */}
                     <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[#e8622a]/5 blur-3xl pointer-events-none" />
@@ -286,7 +337,7 @@ const ProductList = () => {
                     <p className="text-xl md:text-2xl font-black tracking-tight text-[#2c2420] mb-4">What are you looking for today?</p>
 
                     {/* Styled Search Input */}
-                    <div 
+                    <div
                         className="w-full max-w-xl flex items-center gap-3 rounded-full border px-5 py-3.5 bg-white border-[#e4dfd9] transition-all duration-300 focus-within:border-[#e8622a] focus-within:ring-4 focus-within:ring-[#e8622a]/10 focus-within:scale-[1.01] shadow-sm focus-within:shadow-md"
                     >
                         <svg className="h-5 w-5 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" style={{ color: searchTerm ? "#e8622a" : "#8c7e74" }}>
@@ -300,8 +351,8 @@ const ProductList = () => {
                             className="w-full text-base outline-none font-medium bg-transparent text-[#2c2420] placeholder-[#a69c93]"
                         />
                         {searchTerm && (
-                            <button 
-                                onClick={() => setSearchTerm("")} 
+                            <button
+                                onClick={() => setSearchTerm("")}
                                 className="text-[#8c7e74] hover:text-[#e8622a] hover:scale-110 active:scale-95 transition-all cursor-pointer font-extrabold text-sm px-1.5"
                             >
                                 ✕
@@ -388,9 +439,9 @@ const ProductList = () => {
                 <div className="mb-6 h-px" style={{ background: "#ede8e2" }} />
 
                 {/* Advanced Filters Toolbar */}
-                <div className="bg-white/90 backdrop-blur-md border border-[#ede8e2] rounded-3xl p-6 mb-8 shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in">
+                <div className="bg-white/90 backdrop-blur-md border border-[#ede8e2] rounded-3xl p-6 mb-8 shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in filter-bar-anim">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                        
+
                         {/* Price Filter Column */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
@@ -441,11 +492,10 @@ const ProductList = () => {
                                                     setMaxPrice(range.max);
                                                     setPage(1);
                                                 }}
-                                                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold border transition-all duration-200 cursor-pointer active:scale-95 ${
-                                                    isSelected 
-                                                        ? "bg-[#e8622a]/10 border-[#e8622a] text-[#e8622a] shadow-sm scale-[1.02]" 
+                                                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold border transition-all duration-200 cursor-pointer active:scale-95 ${isSelected
+                                                        ? "bg-[#e8622a]/10 border-[#e8622a] text-[#e8622a] shadow-sm scale-[1.02]"
                                                         : "bg-white border-[#ede8e2] text-[#6b5e54] hover:border-stone-400 hover:text-[#2c2420]"
-                                                }`}
+                                                    }`}
                                             >
                                                 {range.label}
                                             </button>
@@ -474,11 +524,10 @@ const ProductList = () => {
                                                     setSort(opt.value);
                                                     setPage(1);
                                                 }}
-                                                className={`rounded-xl px-4 py-2 text-xs font-extrabold transition-all duration-200 cursor-pointer ${
-                                                    isSelected
+                                                className={`rounded-xl px-4 py-2 text-xs font-extrabold transition-all duration-200 cursor-pointer ${isSelected
                                                         ? "bg-white text-[#e8622a] border border-[#ede8e2] shadow-sm scale-[1.02]"
                                                         : "text-[#6b5e54] hover:text-[#2c2420] border border-transparent"
-                                                }`}
+                                                    }`}
                                             >
                                                 {opt.label}
                                             </button>
@@ -564,7 +613,7 @@ const ProductList = () => {
                                         onClick={() =>
                                             setCategoryFilter(cat === "All" ? "" : cat)
                                         }
-                                        className="group relative flex items-center gap-2.5 whitespace-nowrap rounded-2xl border-2 px-5 py-1 text-sm font-semibold outline-none transition-all duration-300 cursor-pointer"
+                                        className="group relative flex items-center gap-2.5 whitespace-nowrap rounded-2xl border-2 px-5 py-1 text-sm font-semibold outline-none transition-all duration-300 cursor-pointer category-pill-anim"
                                         style={{
                                             minWidth: "fit-content",
                                             background: isActive
@@ -664,19 +713,20 @@ const ProductList = () => {
                         <p className="text-sm" style={{ color: "#8c7e74" }}>Try a different search term</p>
                     </div>
                 ) : (
-                    <div className="stagger grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
+                    <div ref={gridRef} className="stagger grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
                         {filtered.map((product) => (
-                            <ProductCard
-                                key={product.id}
-                                product={product}
-                                onClick={(id) => {
-                                    const p = products.find((item) => item.id === id);
-                                    setSelectedProduct(p);
-                                }}
-                                onDeleteSuccess={(id) => {
-                                    setProducts(prev => prev.filter(p => p.id !== id && p._id !== id));
-                                }}
-                            />
+                            <div key={product.id} className="product-card-anim">
+                                <ProductCard
+                                    product={product}
+                                    onClick={(id) => {
+                                        const p = products.find((item) => item.id === id);
+                                        setSelectedProduct(p);
+                                    }}
+                                    onDeleteSuccess={(id) => {
+                                        setProducts(prev => prev.filter(p => p.id !== id && p._id !== id));
+                                    }}
+                                />
+                            </div>
                         ))}
                     </div>
                 )}

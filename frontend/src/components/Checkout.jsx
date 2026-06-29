@@ -156,8 +156,8 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                             const sizeHeight = `${Math.floor(Math.random() * 12) + 8}px`;
                             const duration = `${Math.random() * 1.5 + 2.5}s`;
                             return (
-                                <div 
-                                    key={i} 
+                                <div
+                                    key={i}
                                     className="confetti-particle"
                                     style={{
                                         left,
@@ -729,20 +729,19 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                 <div className="mb-8 max-w-md mx-auto animate-fade-in-up">
                     <div className="flex items-center justify-between relative">
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-full bg-stone-200 -z-10 rounded-full" />
-                        <div 
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-emerald-400 to-emerald-500 -z-10 rounded-full transition-all duration-500" 
-                            style={{ 
-                                width: step === "processing" ? "50%" : step === "success" ? "100%" : "0%" 
-                            }} 
+                        <div
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-emerald-400 to-emerald-500 -z-10 rounded-full transition-all duration-500"
+                            style={{
+                                width: step === "processing" ? "50%" : step === "success" ? "100%" : "0%"
+                            }}
                         />
 
                         {/* Step 1: Shipping */}
                         <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
-                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
-                                step === "form" 
-                                    ? "bg-white border-[#e8622a] text-[#e8622a] shadow-md shadow-[#e8622a]/10" 
+                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${step === "form"
+                                    ? "bg-white border-[#e8622a] text-[#e8622a] shadow-md shadow-[#e8622a]/10"
                                     : "bg-gradient-to-r from-[#e8622a] to-[#c44e1e] border-transparent text-white shadow-md shadow-[#e8622a]/10"
-                            }`}>
+                                }`}>
                                 {step !== "form" ? (
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -754,13 +753,12 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
 
                         {/* Step 2: Payment */}
                         <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
-                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
-                                step === "processing" 
-                                    ? "bg-white border-[#e8622a] text-[#e8622a] shadow-md shadow-[#e8622a]/10" 
+                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${step === "processing"
+                                    ? "bg-white border-[#e8622a] text-[#e8622a] shadow-md shadow-[#e8622a]/10"
                                     : step === "success"
                                         ? "bg-gradient-to-r from-[#e8622a] to-[#c44e1e] border-transparent text-white shadow-md shadow-[#e8622a]/10"
                                         : "bg-white border-stone-200 text-stone-400"
-                            }`}>
+                                }`}>
                                 {step === "success" ? (
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -772,11 +770,10 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
 
                         {/* Step 3: Confirmation */}
                         <div className="flex flex-col items-center gap-1.5 bg-[#f5f3ef] px-3.5">
-                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
-                                step === "success"
+                            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${step === "success"
                                     ? "bg-gradient-to-r from-[#e8622a] to-[#c44e1e] border-transparent text-white shadow-md shadow-[#e8622a]/10"
                                     : "bg-white border-stone-200 text-stone-400"
-                            }`}>
+                                }`}>
                                 3
                             </div>
                             <span className="text-[9px] font-black uppercase tracking-wider text-[#8c7e74]">Confirmation</span>
@@ -883,8 +880,8 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                             setPaymentMethod("Online");
                                         }}
                                         className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${paymentMode === "Online"
-                                                ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
-                                                : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
+                                            ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
+                                            : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
                                             }`}
                                     >
                                         <svg className="w-6 h-6 mb-1.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -900,8 +897,8 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                             setPaymentMethod("Cash on Delivery");
                                         }}
                                         className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${paymentMode === "Offline"
-                                                ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
-                                                : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
+                                            ? "border-[#e8622a] bg-[#e8622a]/5 text-[#e8622a] font-bold"
+                                            : "border-[#ede8e2] bg-[#fafafa] text-[#8c7e74] hover:bg-[#f5f3ef]"
                                             }`}
                                     >
                                         <svg className="w-6 h-6 mb-1.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1014,13 +1011,12 @@ const Checkout = ({ onHideFooter, onShowFooter }) => {
                                         {offers.map((offer) => {
                                             const activeOffer = promoApplied && appliedPromoCode === offer.code;
                                             return (
-                                                <div 
-                                                    key={offer._id} 
-                                                    className={`p-3 rounded-xl border border-dashed text-left cursor-pointer shrink-0 w-44 hover:bg-stone-50 transition-all ${
-                                                        activeOffer 
-                                                            ? "border-emerald-500 bg-emerald-50/20" 
+                                                <div
+                                                    key={offer._id}
+                                                    className={`p-3 rounded-xl border border-dashed text-left cursor-pointer shrink-0 w-44 hover:bg-stone-50 transition-all ${activeOffer
+                                                            ? "border-emerald-500 bg-emerald-50/20"
                                                             : "border-orange-200 bg-orange-50/10"
-                                                    }`}
+                                                        }`}
                                                     onClick={() => {
                                                         if (!promoApplied) {
                                                             setAppliedPromoCode(offer.code);

@@ -51,11 +51,11 @@ const OrderHistory = () => {
         }
     };
 
-    const handleDeleteOrder = async(orderId) =>{
+    const handleDeleteOrder = async (orderId) => {
         setIsOpen(true)
         try {
             const data = await deleteOrderApi(orderId);
-            if(data.success){
+            if (data.success) {
                 setOrders((prev) =>
                     prev.filter((order) => order._id !== orderId)
                 );

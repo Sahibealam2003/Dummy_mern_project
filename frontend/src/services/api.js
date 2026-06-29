@@ -110,18 +110,18 @@ export const deleteOrderApi = async (id) => {
     const response = await API.delete(`/orders/${id}`);
     return response.data;
 };
-   
-export const createPaymentOrderApi = async (amount)=>{
+
+export const createPaymentOrderApi = async (amount) => {
 
     const response = await API.post(
         "/payment/create-order",
-        {amount}
+        { amount }
     );
 
     return response.data;
 }
 
-export const verifyPaymentApi = async(paymentData)=>{
+export const verifyPaymentApi = async (paymentData) => {
 
     const response = await API.post(
         "/payment/verify",
@@ -131,4 +131,40 @@ export const verifyPaymentApi = async(paymentData)=>{
 
     return response.data;
 
-}
+};
+
+export const getDashboardStatsApi = async () => {
+    const response = await API.get("/orders/dashboard/stats");
+    return response.data;
+};
+
+export const createProductReviewApi = async (id, reviewData) => {
+    const response = await API.post(`/products/${id}/reviews`, reviewData);
+    return response.data;
+};
+
+// CRM APIs
+export const getAllUsersApi = async () => {
+    const response = await API.get("/auth/admin/users");
+    return response.data;
+};
+
+export const updateUserRoleApi = async (id, role) => {
+    const response = await API.put(`/auth/admin/users/${id}/role`, { role });
+    return response.data;
+};
+
+export const deleteUserApi = async (id) => {
+    const response = await API.delete(`/auth/admin/users/${id}`);
+    return response.data;
+};
+
+export const sendCrmEmailApi = async (data) => {
+    const response = await API.post("/auth/admin/users/broadcast-email", data);
+    return response.data;
+};
+
+export const sendCrmNotificationApi = async (data) => {
+    const response = await API.post("/auth/admin/users/send-notification", data);
+    return response.data;
+};

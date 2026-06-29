@@ -277,9 +277,19 @@ input:-webkit-autofill:active {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 .animate-shake {
@@ -292,6 +302,7 @@ input:-webkit-autofill:active {
     transform: translateY(-20px) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: translateY(100vh) rotate(720deg);
     opacity: 0;
@@ -317,4 +328,4 @@ input:-webkit-autofill:active {
   border-radius: 2px;
   opacity: 0.85;
   animation: confettiFall 4s linear forwards;
-}
+}

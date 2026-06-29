@@ -24,7 +24,7 @@ export const getProducts = async (req, res) => {
     try {
         const queryParams = req.query || {};
         const cacheKey = `products:${JSON.stringify(queryParams)}`;
-        
+
         try {
             const cachedProducts = await redis.get(cacheKey);
             if (cachedProducts) {
@@ -165,7 +165,7 @@ export const getProductById = async (req, res) => {
 export const createProduct = async (req, res) => {
     try {
         const { title, price, description, category, image } = req.body;
-        
+
         if (!title || !price || !description || !category) {
             return res.status(400).json({ error: "Title, price, description, and category are required" });
         }
@@ -220,7 +220,7 @@ export const updateProduct = async (req, res) => {
 
         // Invalidate cache
         await clearProductsCache(id);
-        
+
         res.status(200).json({
             id: product._id.toString(),
             _id: product._id,

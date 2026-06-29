@@ -369,15 +369,6 @@ function App() {
 
   return (
     <BrowserRouter>
-      <button
-        onClick={requestPermission}
-        className="fixed  right-5 z-50 bg-black text-white text-[10px] font-semibold px-2 py-2 rounded shadow-md hover:bg-zinc-800 transition-colors duration-200"
-      >
-        Enable Notification
-      </button>
-
-    
-
       <AppContent
         isCartOpen={isCartOpen}
         setIsCartOpen={setIsCartOpen}

@@ -13,10 +13,10 @@ import { seedProducts } from "./controllers/productController.js";
 import { seedSpecialOffers } from "./controllers/specialOfferController.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import "./queues/emailWorker.js";
-import {Server} from "socket.io"
-// import http from "http";
-// import WebSocket,{WebSocketServer} from "ws"
-// import {Server} from "socket.io"
+import { Server } from "socket.io";
+import http from "http";
+import { createAdapter } from "@socket.io/redis-adapter";
+import redisClient from "./config/redis.js";
 //Without websocket lib 
 // import crypto from "crypto";
 // function decodeMessage(buffer) {
@@ -95,8 +95,7 @@ import {Server} from "socket.io"
 
 
 const app = express();
-
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8080;
 
 const clientUrl = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.replace(/\/$/, "")
@@ -107,40 +106,42 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:3000",
 ].filter(Boolean);
-//for without lib and socket.io
-// const server = http.createServer(app);
 
+const server = http.createServer(app);
 
-// websocket server
-// const io = new Server(server,{
-  //   cors:"http://localhost:5173",
-  // })
-  // jab user connect hoga
-  // io.on("connection",(socket)=>{
-    //   console.log("UserID: ",socket.id)
-      
-//   // message receive
-//   socket.on("sendMessage", (data) => {
-//     console.log("Message Received:", data);
-//     // sab clients ko bhejna
-//     io.emit("receiveMessage", data);
-//   });
-//   // disconnect
-//   socket.on("disconnect", () => {
-//     console.log("User disconnected", socket.id);
-//   });
+// Initialize Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
 
-// })
-//for ws lib
+// Setup Redis Pub/Sub clients and Adapter for multi-server synchronization (Commented out for Single Server setup)
+// const pubClient = redisClient.duplicate();
+// const subClient = redisClient.duplicate();
 
-// const wss = new WebSocketServer({port: 8080})
-// wss.on("connection",(socket)=>{
-//   console.log("client connected");
-//   socket.on("message",(msg)=>{
-//     console.log(msg.toString())
-//     socket.send("server recived")
-//   })
-// })
+// Connect Redis Pub/Sub clients
+// pubClient.on("error", (err) => console.error("Redis Pub Client Error:", err));
+// subClient.on("error", (err) => console.error("Redis Sub Client Error:", err));
+
+// io.adapter(createAdapter(pubClient, subClient));
+
+// Socket.IO event listeners
+io.on("connection", (socket) => {
+  console.log(`[Server Port ${PORT}] Client connected to server instance: ${socket.id}`);
+
+  // When a message is received from a client
+  socket.on("sendMessage", (data) => {
+    console.log(`[Server Port ${PORT}] Received 'sendMessage' event:`, data);
+    // Broadcast to all clients connected to any server instance in the cluster
+    io.emit("receiveMessage", `[Server Port ${PORT}] ${data}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`[Server Port ${PORT}] Client disconnected: ${socket.id}`);
+  });
+});
 
 
 

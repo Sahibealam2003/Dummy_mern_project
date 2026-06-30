@@ -163,32 +163,25 @@ const socket = io("http://localhost:8080");
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const [ws, setWs] = useState(null);
+
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8080");
-    setWs(socket);
-    socket.onmessage=(event)=>{
-      console.log(event.data)
-    }
+    socket.on("connect", () => {
+      console.log("Socket.IO Connected! ID:", socket.id);
+    });
+
+    socket.on("receiveMessage", (data) => {
+      console.log("Message received from Server:", data);
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("receiveMessage");
+    };
   }, []);
 
-  const send=()=>{
-    ws.send("Hello from client")
-  }
-  //For socket.io lib
-  // const [message, setMessage] = useState("");
-  // const [chat, setChat] = useState([]);
-
-  // useEffect(() => {
-  //   socket.on("receiveMessage", (data) => {
-  //     setChat((prev) => [...prev, data]);
-  //   });
-  // }, []);
-
-  // const sendMessage=()=>{
-  //   socket.emit("sendMessage",message)
-  //   setMessage("")
-  // }
+  const send = () => {
+    socket.emit("sendMessage", "Hello from client");
+  };
   const requestPermission = async () => {
     try {
       const permission = await Notification.requestPermission();

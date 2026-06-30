@@ -2,9 +2,11 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon ./src/server.js",
-    "start": "node ./src/server.js"
+    "start": "node ./src/server.js",
+    "start:cluster": "node start-cluster.js"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.79.0",
     "cloudinary": "^2.10.0",

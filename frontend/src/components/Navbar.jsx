@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { logout } from "../reducers/authSlice";
 import { logoutApi } from "../services/authApi";
 import ProfileModal from "./ProfileModal";
+import socket from "../socket";
 
 const PROMOS = [
     <span key="p0" className="inline-flex items-center gap-1.5">
@@ -25,7 +26,7 @@ const PROMOS = [
     </span>,
 ];
 
-const Navbar = ({ onCartOpen, onChatOpen }) => {
+const Navbar = ({ onCartOpen }) => {
     const dispatch = useDispatch();
     const navRef = useRef(null);
     const { isLoggedIn, user } = useSelector((state) => state.auth);
@@ -352,17 +353,7 @@ const Navbar = ({ onCartOpen, onChatOpen }) => {
                             </button>
                         )}
 
-                        {/* Live Chat */}
-                        <button
-                            onClick={onChatOpen}
-                            className="relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:bg-[#e8622a]/8 hover:scale-105 active:scale-95 group cursor-pointer nav-btn-anim"
-                            aria-label="Open Chat"
-                            title="Live Chat"
-                        >
-                            <svg className="h-5 w-5 text-[#2c2420] group-hover:text-[#e8622a] transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                        </button>
+
 
 
 
@@ -481,6 +472,7 @@ const Navbar = ({ onCartOpen, onChatOpen }) => {
                                                 onClick={async () => {
                                                     try {
                                                         await logoutApi();
+                                                        socket.disconnect();
                                                     } catch (e) {
                                                         console.error("Backend logout error:", e);
                                                     }

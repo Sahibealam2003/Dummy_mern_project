@@ -12,7 +12,6 @@ const OrderHistory = () => {
     const [loading, setLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false)
     const navigate = useNavigate();
-    console.log(orders)
     useEffect(() => {
         if (!isLoggedIn) {
             navigate("/login?redirect=/orders");
@@ -339,7 +338,7 @@ const OrderHistory = () => {
                                                                 }`}
                                                         >   {order.orderStatus === "Cancelled" && (
                                                             <div className="h-25px w-25px rounded-full bg-red-600" >
-                                                                <svg width="20px" height="20px" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 8L8 16M8.00001 8L16 16" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                                                                <svg width="20px" height="20px" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 8L8 16M8.00001 8L16 16" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path> </g></svg>
                                                             </div>
                                                         )}
                                                             {isCompleted && (

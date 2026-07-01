@@ -13,86 +13,9 @@ import { seedProducts } from "./controllers/productController.js";
 import { seedSpecialOffers } from "./controllers/specialOfferController.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import "./queues/emailWorker.js";
-import { Server } from "socket.io";
+
 import http from "http";
-import { createAdapter } from "@socket.io/redis-adapter";
-import redisClient from "./config/redis.js";
-//Without websocket lib 
-// import crypto from "crypto";
-// function decodeMessage(buffer) {
-//   const secondByte = buffer[1];
-
-//   let length = secondByte & 127;
-
-//   let offset = 2;
-
-//   if (length === 126) {
-//     length = buffer.readUInt16BE(2);
-//     offset = 4;
-//   } else if (length === 127) {
-//     length = Number(buffer.readBigUInt64BE(2));
-
-//     offset = 10;
-//   }
-
-//   const mask = buffer.slice(offset, offset + 4);
-
-//   offset += 4;
-
-//   const payload = buffer.slice(offset, offset + length);
-
-//   for (let i = 0; i < payload.length; i++) {
-//     payload[i] ^= mask[i % 4];
-//   }
-
-//   return payload.toString();
-// }
-// function encodeMessage(message) {
-//   const data = Buffer.from(message);
-
-//   const frame = Buffer.alloc(data.length + 2);
-
-//   frame[0] = 0x81; // text frame
-
-//   frame[1] = data.length;
-
-//   data.copy(frame, 2);
-
-//   return frame;
-// }
-
-// server.on("upgrade", (req, socket, head) => {
-//   const key = req.headers["sec-websocket-key"];
-
-//   const acceptKey = crypto
-//     .createHash("sha1")
-//     .update(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
-//     .digest("base64");
-
-//   socket.write(
-//     [
-//       "HTTP/1.1 101 Switching Protocols",
-//       "Upgrade: websocket",
-//       "Connection: Upgrade",
-//       `Sec-WebSocket-Accept: ${acceptKey}`,
-//     ].join("\r\n") + "\r\n\r\n",
-//   );
-
-//   console.log("WebSocket Connected");
-
-//   socket.on("data", (message) => {
-//     const text = decodeMessage(message);
-
-//     console.log("Message Received:", text);
-
-//     socket.write(encodeMessage("Server Received Your Message"));
-//   });
-
-//   socket.on("error", (error) => {
-//     console.log("Socket Error:", error.message);
-//   });
-// });
-
+import { initSocket } from "./config/socket.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -107,42 +30,8 @@ const allowedOrigins = [
   "http://localhost:3000",
 ].filter(Boolean);
 
-const server = http.createServer(app);
-
-// Initialize Socket.IO with CORS
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-  },
-});
-
-// Setup Redis Pub/Sub clients and Adapter for multi-server synchronization (Commented out for Single Server setup)
-// const pubClient = redisClient.duplicate();
-// const subClient = redisClient.duplicate();
-
-// Connect Redis Pub/Sub clients
-// pubClient.on("error", (err) => console.error("Redis Pub Client Error:", err));
-// subClient.on("error", (err) => console.error("Redis Sub Client Error:", err));
-
-// io.adapter(createAdapter(pubClient, subClient));
-
-// Socket.IO event listeners
-io.on("connection", (socket) => {
-  console.log(`[Server Port ${PORT}] Client connected to server instance: ${socket.id}`);
-
-  // When a message is received from a client
-  socket.on("sendMessage", (data) => {
-    console.log(`[Server Port ${PORT}] Received 'sendMessage' event:`, data);
-    // Broadcast to all clients connected to any server instance in the cluster
-    io.emit("receiveMessage", `[Server Port ${PORT}] ${data}`);
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`[Server Port ${PORT}] Client disconnected: ${socket.id}`);
-  });
-});
-
+const server = http.createServer(app)
+initSocket(server)
 
 
 app.use(

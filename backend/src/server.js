@@ -13,9 +13,7 @@ import { seedProducts } from "./controllers/productController.js";
 import { seedSpecialOffers } from "./controllers/specialOfferController.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import "./queues/emailWorker.js";
-
 import http from "http";
-import { initSocket } from "./config/socket.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -31,7 +29,8 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 const server = http.createServer(app)
-initSocket(server)
+
+
 
 
 app.use(

@@ -6,6 +6,10 @@ export const sendNotification = async (
     title,
     body
 ) => {
+    // Validate token
+    if (!fcmToken || fcmToken === "none") {
+        return;
+    }
 
     try {
 
@@ -39,4 +43,4 @@ export const sendNotification = async (
 
     }
 
-};
+};

@@ -1,3 +1,4 @@
+// SW Version: 2.0 — Forces browser to update cached service worker
 importScripts(
   "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js",
 );
@@ -17,28 +18,32 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  console.log("Background Payload:", payload);
+// This handles push messages when browser tab is closed or in background
+messaging.onBackgroundMessage(function (payload) {
+  console.log("[SW v2] Background message received:", payload);
 
-  const notificationTitle = payload.data.title;
+  // Safely extract data - handle both payload.data and payload.notification formats
+  var data = payload.data || {};
+  var notification = payload.notification || {};
 
-  const notificationOptions = {
-    body: payload.data.body,
+  var title = data.title || notification.title || "ShopX Notification";
+  var body = data.body || notification.body || "";
+  var icon = data.icon || "/logo-192.png";
+  var badge = data.badge || "/badge-72.png";
+  var image = data.image || undefined;
+  var url = data.url || "/orders";
 
-    icon: payload.data.icon,
-
-    badge: payload.data.badge,
-
-    image: payload.data.image,
-
+  var notificationOptions = {
+    body: body,
+    icon: icon,
+    badge: badge,
+    image: image,
     requireInteraction: true,
-
-    tag: "order-notification",
-
+    tag: "order-" + Date.now(),
+    renotify: true,
     data: {
-      url: payload.data.url,
+      url: url,
     },
-
     actions: [
       {
         action: "view-order",
@@ -51,29 +56,53 @@ messaging.onBackgroundMessage((payload) => {
     ],
   };
 
-  self.registration.showNotification(
-    notificationTitle,
-    notificationOptions
-  );
+  return self.registration.showNotification(title, notificationOptions);
 });
-self.addEventListener("notificationclick", (event) => {
+
+// Single unified notificationclick handler
+self.addEventListener("notificationclick", function (event) {
   event.notification.close();
 
+  // If action is 'close', just close the notification
+  if (event.action === "close") {
+    return;
+  }
+
+  var urlToOpen = "/orders";
+  if (event.notification.data && event.notification.data.url) {
+    urlToOpen = event.notification.data.url;
+  }
+
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then(function (windowClients) {
+        // If a window is already open, focus it and navigate
+        for (var i = 0; i < windowClients.length; i++) {
+          var client = windowClients[i];
+          if (
+            client.url.indexOf(self.location.origin) !== -1 &&
+            "focus" in client
+          ) {
+            client.focus();
+            client.navigate(urlToOpen);
+            return;
+          }
+        }
+        // Otherwise open a new window
+        return clients.openWindow(urlToOpen);
+      }),
   );
 });
 
-self.addEventListener("notificationclick", (event) => {
+// Force immediate activation — skip waiting for old SW to die
+self.addEventListener("install", function (event) {
+  console.log("[SW v2] Installing...");
+  self.skipWaiting();
+});
 
-    event.notification.close();
-
-    if (event.action === "view-order") {
-
-        event.waitUntil(
-            clients.openWindow("/orders")
-        );
-
-    }
-
+// Claim all clients immediately
+self.addEventListener("activate", function (event) {
+  console.log("[SW v2] Activated!");
+  event.waitUntil(clients.claim());
 });

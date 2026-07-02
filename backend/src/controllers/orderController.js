@@ -183,7 +183,7 @@ export const updateOrderStatus = async (req, res) => {
 
     const order = await Order.findById(req.params.id).populate(
       "user",
-      "name email fcmToken",
+      "name email",
     );
 
     if (!order) {
@@ -202,6 +202,16 @@ export const updateOrderStatus = async (req, res) => {
     order.orderStatus = status;
     await order.save();
 
+    // Fetch fresh user with fcmToken directly from DB (not from populate)
+    const orderUser = await User.findById(order.user._id).select("name email fcmToken");
+    const userFcmToken = orderUser?.fcmToken;
+
+    console.log("=== ORDER UPDATE DEBUG ===");
+    console.log("Status:", status);
+    console.log("User:", orderUser?.email);
+    console.log("FCM Token:", userFcmToken ? "EXISTS" : "MISSING");
+    console.log("==========================");
+
     // Emit live order status update via Socket.io
     try {
       const io = getIO();
@@ -218,147 +228,65 @@ export const updateOrderStatus = async (req, res) => {
       console.error("Failed to emit status update socket event:", socketErr);
     }
 
+    // Send FCM push notification for ALL status updates
+    const statusMessages = {
+      Processing: "Your Order is Under Processing",
+      Placed: "Your Order Has Been Placed",
+      Shipped: "Your Order Has Been Shipped",
+      Delivered: "Your Order Has Been Delivered",
+      Cancelled: "Your Order Has Been Cancelled",
+    };
+
     try {
-      switch (status) {
-        case "Processing":
-          try {
-            console.log("Update Token:", order.user.fcmToken);
-            await sendNotification(
-              order.user.fcmToken,
-              "Order Status",
-              "Your Order Under Processing",
-            );
-            console.log("Processing notification sent successfully");
-          } catch (error) {
-            console.log("error");
-          }
-          await emailQueue.add("sendEmail", {
-            type: "PROCESSING_ORDER",
-            data: {
-              email: order.user.email,
-              orderNumber: order.orderNumber,
-              totalPrice: order.orderItems.totalPrice,
-            },
-          });
-          console.log("Processing email queued");
-          break;
-
-        case "Placed":
-          try {
-            await sendNotification(
-              order.user.fcmToken,
-              "Order Status",
-              "Your Order Placed",
-            );
-            console.log("Placed notification sent successfully");
-          } catch (error) {
-            console.log("error");
-          }
-          await emailQueue.add("sendEmail", {
-            type: "PLACED_ORDER",
-            data: {
-              email: order.user.email,
-              customerName: order.user.name,
-
-              orderNumber: order.orderNumber,
-
-              totalAmount: order.totalPrice,
-
-              address: `${order.shippingAddress.address}, 
-                                    ${order.shippingAddress.city}, 
-                                    ${order.shippingAddress.zip}`,
-              products: order.orderItems,
-            },
-          });
-          console.log("Placed email queued");
-          break;
-
-        case "Shipped":
-          try {
-            await sendNotification(
-              order.user.fcmToken,
-              "Order Status",
-              "Your Order Has Been Shipped",
-            );
-            console.log("Shipped notification sent successfully");
-          } catch (error) {
-            console.log("error");
-          }
-
-          await emailQueue.add("sendEmail", {
-            type: "SHIPPED_ORDER",
-            data: {
-              email: order.user.email,
-              customerName: order.user.name,
-
-              orderNumber: order.orderNumber,
-
-              totalAmount: order.totalPrice,
-
-              address: `${order.shippingAddress.address}, 
-                                    ${order.shippingAddress.city}, 
-                                    ${order.shippingAddress.zip}`,
-              products: order.orderItems,
-            },
-          });
-          console.log("Shipped email queued");
-          break;
-
-        case "Delivered":
-          try {
-            await sendNotification(
-              order.user.fcmToken,
-              "Order Status",
-              "Your Order Has Been Delivered",
-            );
-            console.log("Delivered notification sent successfully");
-          } catch (error) {
-            console.log("error");
-          }
-
-          await emailQueue.add("sendEmail", {
-            type: "DELIVERED_EMAIL",
-            data: {
-              email: order.user.email,
-              customerName: order.user.name,
-
-              orderNumber: order.orderNumber,
-
-              totalAmount: order.totalPrice,
-
-              address: `${order.shippingAddress.address}, 
-                                    ${order.shippingAddress.city}, 
-                                    ${order.shippingAddress.zip}`,
-              products: order.orderItems,
-            },
-          });
-          console.log("Delivered email queued");
-          break;
-
-        case "Cancelled":
-          try {
-            await sendNotification(
-              order.user.fcmToken,
-              "Order Status",
-              "Your Order Has Been Cancelled",
-            );
-            console.log("Cancelled notification sent successfully");
-          } catch (error) {
-            console.log("error");
-          }
-          await emailQueue.add("sendEmail", {
-            type: "CANCEL_ORDER",
-            data: {
-              email: order.user.email,
-              name: order.user.name,
-              orderId: order.orderNumber,
-              totalAmount: order.totalPrice,
-            },
-          });
-          console.log("Cancelled email queued");
-          break;
+      if (userFcmToken) {
+        await sendNotification(
+          userFcmToken,
+          "Order Status Update",
+          statusMessages[status] || `Your order status: ${status}`,
+        );
+        console.log(`${status} FCM notification sent successfully`);
+      } else {
+        console.log("No FCM token found for user, skipping push notification");
       }
-    } catch (error) {}
+    } catch (notifError) {
+      console.error("FCM notification error:", notifError.message);
+    }
+
+    // Queue status-specific email
+    try {
+      const emailData = {
+        email: order.user.email,
+        customerName: order.user.name,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalPrice,
+        address: `${order.shippingAddress.address}, ${order.shippingAddress.city}, ${order.shippingAddress.zip}`,
+        products: order.orderItems,
+      };
+
+      const emailTypeMap = {
+        Processing: "PROCESSING_ORDER",
+        Placed: "PLACED_ORDER",
+        Shipped: "SHIPPED_ORDER",
+        Delivered: "DELIVERED_EMAIL",
+        Cancelled: "CANCEL_ORDER",
+      };
+
+      const emailType = emailTypeMap[status];
+      if (emailType) {
+        // For cancel, use slightly different data keys
+        const emailPayload = status === "Cancelled" 
+          ? { email: order.user.email, name: order.user.name, orderId: order.orderNumber, totalAmount: order.totalPrice }
+          : emailData;
+
+        await emailQueue.add("sendEmail", {
+          type: emailType,
+          data: emailPayload,
+        });
+        console.log(`${status} email queued`);
+      }
+    } catch (emailError) {
+      console.error("Email queue error:", emailError.message);
+    }
 
     res.status(200).json({
       success: true,

@@ -3,26 +3,27 @@ import messaging from "../config/firebase.js";
 export const sendNotification = async (fcmToken, title, body) => {
   // Validate token
   if (!fcmToken || fcmToken === "none") {
+    console.log("sendNotification skipped: token is", fcmToken || "missing");
     return;
   }
 
   try {
- const message = {
-  token: fcmToken,
+    const message = {
+      token: fcmToken,
 
-  data: {
-    title,
-    body,
+      data: {
+        title,
+        body,
 
-    icon: "/logo-192.png",
+        icon: "/logo-192.png",
 
-    badge: "/badge-72.png",
+        badge: "/badge-72.png",
 
-    image: "/images/order-banner.png",
+        image: "/images/order-banner.png",
 
-    url: "/orders",
-  },
-};
+        url: "/orders",
+      },
+    };
 
     const response = await messaging.send(message);
 

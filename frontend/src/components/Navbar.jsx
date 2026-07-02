@@ -54,17 +54,26 @@ const Navbar = ({ onCartOpen }) => {
             return;
         }
 
+        // Helper: get FCM token with service worker registration
+        const getFcmToken = async () => {
+            const { getToken } = await import("firebase/messaging");
+            const { messaging } = await import("../firebase/firebase");
+            // Get existing service worker registration so FCM binds to our custom SW
+            const swRegistration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
+            const token = await getToken(messaging, {
+                vapidKey: "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw",
+                serviceWorkerRegistration: swRegistration || undefined
+            });
+            return token;
+        };
+
         // If permission is already granted, toggle mute/unmute
         if (Notification.permission === "granted") {
             try {
                 const { sendFToken } = await import("../services/authApi");
                 if (isNotifMuted) {
                     // Turn it ON (Unmute)
-                    const { getToken } = await import("firebase/messaging");
-                    const { messaging } = await import("../firebase/firebase");
-                    const token = await getToken(messaging, {
-                        vapidKey: "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw"
-                    });
+                    const token = await getFcmToken();
                     await sendFToken(token);
                     localStorage.setItem("notifications_muted", "false");
                     setIsNotifMuted(false);
@@ -88,13 +97,8 @@ const Navbar = ({ onCartOpen }) => {
             setNotifPermission(permission);
 
             if (permission === "granted") {
-                const { getToken } = await import("firebase/messaging");
-                const { messaging } = await import("../firebase/firebase");
                 const { sendFToken } = await import("../services/authApi");
-
-                const token = await getToken(messaging, {
-                    vapidKey: "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw"
-                });
+                const token = await getFcmToken();
                 console.log("FCM TOKEN:", token);
                 await sendFToken(token);
                 localStorage.setItem("notifications_muted", "false");

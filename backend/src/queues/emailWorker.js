@@ -4,7 +4,7 @@ dotenv.config();
 import { Worker } from "bullmq";
 import transporter from "../config/mail.js";
 import { redisConnection } from "../config/redis.js";
-import { sendNotification } from "../utils/sendNotification.js";
+
 import {
   deliveredEmail,
   orderUnderProcessingEmail,
@@ -51,25 +51,7 @@ const worker = new Worker(
         break;
 
       case "ORDER_NOTIFICATION":
-        await sendNotification(
-          data.fcmToken,
-          "Order Status",
-          "Your order is under processing",
-        );
-
-        // Website realtime notification
-
-        io.to(data.userId).emit("orderUpdate", {
-          message: "Your order is under processing",
-          orderId: data.orderId,
-        });
-
         email = orderUnderProcessingEmail(data);
-
-        break;
-
-        email = orderUnderProcessingEmail(data);
-
         break;
 
       case "CRM_MESSAGE":

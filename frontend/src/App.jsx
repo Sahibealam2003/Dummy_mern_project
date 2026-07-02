@@ -37,8 +37,6 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
 
   const isAdmin = isLoggedIn && user?.role === "admin";
   const [message, setMessage] = useState("");
-  // State for notification
-  const [fcmNotification, setFcmNotification] = useState(null);
   const [socketNotification, setSocketNotification] = useState(null);
   React.useEffect(() => {
     if (!isAdmin) {
@@ -46,29 +44,43 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
     }
   }, [isLoggedIn, isAdmin, dispatch]);
 
+  // Show REAL browser notification when FCM message arrives in foreground
   React.useEffect(() => {
     const unsubscribe = 
     onMessage(messaging, (payload) => {
-      console.log("Message received:", payload);
-      // Set toast state
-      setFcmNotification({
-        title: payload.data.title || "Notification",
-        body: payload.data.body || "",
-      });
+      console.log("Foreground message received:", payload);
+
+      const title = payload.data?.title || "ShopX Notification";
+      const body = payload.data?.body || "";
+      const icon = payload.data?.icon || "/logo-192.png";
+      const badge = payload.data?.badge || "/badge-72.png";
+      const image = payload.data?.image;
+      const url = payload.data?.url || "/orders";
+
+      // Show real OS/browser notification (not a toast)
+      if (Notification.permission === "granted") {
+        const notification = new Notification(title, {
+          body,
+          icon,
+          badge,
+          image,
+          tag: `order-${Date.now()}`,
+          renotify: true,
+          requireInteraction: true,
+          data: { url },
+        });
+
+        // Handle click on the notification
+        notification.onclick = () => {
+          window.focus();
+          window.location.href = url;
+          notification.close();
+        };
+      }
     });
 
     return () => unsubscribe();
   }, []);
-
-  React.useEffect(() => {
-    if (fcmNotification) {
-      // Clear toast timeout
-      const timer = setTimeout(() => {
-        setFcmNotification(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [fcmNotification]);
 
   React.useEffect(() => {
     const hidePages = [
@@ -191,54 +203,7 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
           </div>
         </div>
       )}
-      {/* Premium toast notification */}
-      {fcmNotification && (
-        <div className="fixed top-24 right-6 z-[9999] max-w-sm w-full bg-white/95 backdrop-blur-md border border-gray-100 rounded-xl shadow-2xl p-4 flex items-start space-x-3 transition-all duration-300">
-          <div className="flex-shrink-0 bg-indigo-50 text-indigo-600 p-2 rounded-lg">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-              />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">
-              {fcmNotification.title}
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed break-words">
-              {fcmNotification.body}
-            </p>
-          </div>
-          <div className="flex-shrink-0 flex">
-            <button
-              onClick={() => setFcmNotification(null)}
-              className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+
       {showNavbar && <Navbar onCartOpen={() => setIsCartOpen(true)} />}
 
       <main

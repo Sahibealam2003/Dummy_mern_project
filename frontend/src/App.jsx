@@ -21,6 +21,7 @@ import AdminPanel from "./components/AdminPanel";
 import { onMessage } from "firebase/messaging";
 import { messaging } from "./firebase/firebase";
 import { useEffect } from "react";
+import { getToken } from "firebase/messaging";
 import { initiateSocket, disconnectSocket } from "./services/socket";
 function AppContent({ isCartOpen, setIsCartOpen }) {
   const dispatch = useDispatch();
@@ -36,8 +37,33 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
   const { isLoggedIn, user } = useSelector((state) => state.auth);
 
   const isAdmin = isLoggedIn && user?.role === "admin";
-  const [message, setMessage] = useState("");
-  const [socketNotification, setSocketNotification] = useState(null);
+const [message, setMessage] = useState("");
+
+const [fcmNotification, setFcmNotification] = useState(null);
+
+const [socketNotification, setSocketNotification] = useState(null);
+
+useEffect(() => {
+  const requestPermission = async () => {
+    const permission = await Notification.requestPermission();
+
+    console.log("Permission:", permission);
+
+    if (permission !== "granted") return;
+
+    const token = await getToken(messaging, {
+      vapidKey:
+        "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw"
+    });
+
+    console.log("NEW TOKEN");
+    console.log(token);
+
+    await sendFToken(token);
+  };
+
+  requestPermission();
+}, []);
   React.useEffect(() => {
     if (!isAdmin) {
       dispatch(fetchCart());
@@ -47,37 +73,21 @@ function AppContent({ isCartOpen, setIsCartOpen }) {
   // Show REAL browser notification when FCM message arrives in foreground
   React.useEffect(() => {
     const unsubscribe = 
-    onMessage(messaging, (payload) => {
-      console.log("Foreground message received:", payload);
+   onMessage(messaging, (payload) => {
+  console.log("Message received:", payload);
 
-      const title = payload.data?.title || "ShopX Notification";
-      const body = payload.data?.body || "";
-      const icon = payload.data?.icon || "/logo-192.png";
-      const badge = payload.data?.badge || "/badge-72.png";
-      const image = payload.data?.image;
-      const url = payload.data?.url || "/orders";
+  console.log("Notification permission:", Notification.permission);
 
-      // Show real OS/browser notification (not a toast)
-      if (Notification.permission === "granted") {
-        const notification = new Notification(title, {
-          body,
-          icon,
-          badge,
-          image,
-          tag: `order-${Date.now()}`,
-          renotify: true,
-          requireInteraction: true,
-          data: { url },
-        });
+  console.log("Creating browser notification...");
 
-        // Handle click on the notification
-        notification.onclick = () => {
-          window.focus();
-          window.location.href = url;
-          notification.close();
-        };
-      }
-    });
+  new Notification(payload.notification.title, {
+    body: payload.notification.body,
+    icon: payload.notification.icon,
+    image: payload.notification.image,
+  });
+
+  console.log("Notification created");
+});
 
     return () => unsubscribe();
   }, []);

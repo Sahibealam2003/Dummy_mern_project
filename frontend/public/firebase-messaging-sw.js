@@ -18,47 +18,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// This handles push messages when browser tab is closed or in background
-messaging.onBackgroundMessage(function (payload) {
-  console.log("[SW v2] Background message received:", payload);
-
-  // Safely extract data - handle both payload.data and payload.notification formats
-  var data = payload.data || {};
-  var notification = payload.notification || {};
-
-  var title = data.title || notification.title || "ShopX Notification";
-  var body = data.body || notification.body || "";
-  var icon = data.icon || "/logo-192.png";
-  var badge = data.badge || "/badge-72.png";
-  var image = data.image || undefined;
-  var url = data.url || "/orders";
-
-  var notificationOptions = {
-    body: body,
-    icon: icon,
-    badge: badge,
-    image: image,
-    requireInteraction: true,
-    tag: "order-" + Date.now(),
-    renotify: true,
-    data: {
-      url: url,
-    },
-    actions: [
-      {
-        action: "view-order",
-        title: "📦 View Order",
-      },
-      {
-        action: "close",
-        title: "❌ Close",
-      },
-    ],
-  };
-
-  return self.registration.showNotification(title, notificationOptions);
-});
-
 // Single unified notificationclick handler
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();

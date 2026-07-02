@@ -579,6 +579,7 @@ export const forgotPassword = async (req, res) => {
 export const saveToken = async (req, res) => {
   try {
     const { token } = req.body;
+    console.log(req.body);
 
     if (!token) {
       return res.status(400).json({ error: "Token is required" });
@@ -591,7 +592,7 @@ export const saveToken = async (req, res) => {
     );
 
     console.log("FCM Token saved ", user.email);
-
+    console.log(user.fcmToken);
     res.status(200).json({
       success: true,
       message: "Token saved successfully",

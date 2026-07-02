@@ -64,6 +64,7 @@ const Navbar = ({ onCartOpen }) => {
                 vapidKey: "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw",
                 serviceWorkerRegistration: swRegistration || undefined
             });
+            console.log("NEW TOKEN:", token);
             return token;
         };
 

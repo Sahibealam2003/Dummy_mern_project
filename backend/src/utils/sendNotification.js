@@ -1,9 +1,8 @@
 import messaging from "../config/firebase.js";
 
 export const sendNotification = async (fcmToken, title, body) => {
-  // Validate token
   if (!fcmToken || fcmToken === "none") {
-    console.log("sendNotification skipped: token is", fcmToken || "missing");
+    console.log("❌ FCM Token missing");
     return;
   }
 
@@ -11,24 +10,40 @@ export const sendNotification = async (fcmToken, title, body) => {
     const message = {
       token: fcmToken,
 
-      data: {
+      notification: {
         title,
         body,
+      },
 
-        icon: "/logo-192.png",
+      webpush: {
+        headers: {
+          Urgency: "high",
+        },
 
-        badge: "/badge-72.png",
+        notification: {
+          title,
+          body,
+          icon: "http://localhost:5173/logo-192.png",
+          badge: "http://localhost:5173/badge-72.png",
+          image: "http://localhost:5173/images/order-banner.png",
+          requireInteraction: true,
+          tag: `order-${Date.now()}`
+        },
 
-        image: "/images/order-banner.png",
-
-        url: "/orders",
+        fcmOptions: {
+          link: "http://localhost:5173/orders",
+        },
       },
     };
 
+    console.log("========== FCM ==========");
+    console.log("Token:", fcmToken);
+    console.log(JSON.stringify(message, null, 2));
+
     const response = await messaging.send(message);
 
-    console.log("Notification sent:", response);
+    console.log("Firebase Response:", response);
   } catch (error) {
-    console.log("Notification error:", error.message);
+    console.error("FCM Error:", error);
   }
 };

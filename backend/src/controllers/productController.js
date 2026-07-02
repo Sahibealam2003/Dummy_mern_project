@@ -1,17 +1,17 @@
 import Product from "../models/productModel.js";
-import redis from "../config/redis.js";
+import { redisConnection } from "../config/redis.js";
 import { dummyProducts } from "../utils/dummyProducts.js";
 
 // Cache clearing helper for products
 const clearProductsCache = async (productId = null) => {
     try {
-        const keys = await redis.keys("products:*");
+        const keys = await redisConnection.keys("products:*");
         if (keys.length > 0) {
-            await redis.del(keys);
+            await redisConnection.del(keys);
         }
-        await redis.del("all_products");
+        await redisConnection.del("all_products");
         if (productId) {
-            await redis.del(`product:${productId}`);
+            await redisConnection.del(`product:${productId}`);
         }
         console.log("Redis products cache successfully invalidated");
     } catch (err) {
@@ -26,7 +26,7 @@ export const getProducts = async (req, res) => {
         const cacheKey = `products:${JSON.stringify(queryParams)}`;
 
         try {
-            const cachedProducts = await redis.get(cacheKey);
+            const cachedProducts = await redisConnection.get(cacheKey);
             if (cachedProducts) {
                 console.log(`Serving products for query ${JSON.stringify(queryParams)} from cache`);
                 return res.status(200).json(JSON.parse(cachedProducts));
@@ -102,7 +102,7 @@ export const getProducts = async (req, res) => {
         };
 
         try {
-            await redis.set(cacheKey, JSON.stringify(result), "EX", 3600);
+            await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 3600);
             console.log(`Cached products for query ${JSON.stringify(queryParams)} in Redis`);
         } catch (cacheError) {
             console.error("Redis error caching products:", cacheError);
@@ -121,7 +121,7 @@ export const getProductById = async (req, res) => {
         const { id } = req.params;
         const cacheKey = `product:${id}`;
         try {
-            const cachedProduct = await redis.get(cacheKey);
+            const cachedProduct = await redisConnection.get(cacheKey);
             if (cachedProduct) {
                 console.log(`Serving product ${id} from cache`);
                 return res.status(200).json(JSON.parse(cachedProduct));
@@ -148,7 +148,7 @@ export const getProductById = async (req, res) => {
         };
 
         try {
-            await redis.set(cacheKey, JSON.stringify(mappedProduct), "EX", 3600);
+            await redisConnection.set(cacheKey, JSON.stringify(mappedProduct), "EX", 3600);
             console.log(`Cached product ${id} in Redis`);
         } catch (cacheError) {
             console.error("Redis error caching single product:", cacheError);

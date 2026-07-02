@@ -5,7 +5,6 @@ import gsap from "gsap";
 import { logout } from "../reducers/authSlice";
 import { logoutApi } from "../services/authApi";
 import ProfileModal from "./ProfileModal";
-import socket from "../socket";
 
 const PROMOS = [
     <span key="p0" className="inline-flex items-center gap-1.5">
@@ -472,7 +471,6 @@ const Navbar = ({ onCartOpen }) => {
                                                 onClick={async () => {
                                                     try {
                                                         await logoutApi();
-                                                        socket.disconnect();
                                                     } catch (e) {
                                                         console.error("Backend logout error:", e);
                                                     }

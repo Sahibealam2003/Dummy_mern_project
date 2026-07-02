@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
-import redis from "../config/redis.js";
+import { redisConnection } from "../config/redis.js";
 
 export const protect = async (req, res, next) => {
     let token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
@@ -10,7 +10,7 @@ export const protect = async (req, res, next) => {
     }
 
     try {
-        const isBlacklisted = await redis.get(`blacklist:${token}`);
+        const isBlacklisted = await redisConnection.get(`blacklist:${token}`);
         if (isBlacklisted) {
             return res.status(401).json({ error: "Session invalidated, please login again" });
         }

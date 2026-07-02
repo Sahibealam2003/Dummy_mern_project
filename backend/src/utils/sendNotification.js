@@ -1,46 +1,33 @@
 import messaging from "../config/firebase.js";
 
+export const sendNotification = async (fcmToken, title, body) => {
+  // Validate token
+  if (!fcmToken || fcmToken === "none") {
+    return;
+  }
 
-export const sendNotification = async (
-    fcmToken,
+  try {
+ const message = {
+  token: fcmToken,
+
+  data: {
     title,
-    body
-) => {
-    // Validate token
-    if (!fcmToken || fcmToken === "none") {
-        return;
-    }
+    body,
 
-    try {
+    icon: "/logo-192.png",
 
-        const message = {
+    badge: "/badge-72.png",
 
-            notification:{
-                title,
-                body
-            },
+    image: "/images/order-banner.png",
 
-            token:fcmToken
+    url: "/orders",
+  },
+};
 
-        };
+    const response = await messaging.send(message);
 
-
-        const response = await messaging.send(message);
-
-
-        console.log(
-            "Notification sent:",
-            response
-        );
-
-
-    } catch(error){
-
-        console.log(
-            "Notification error:",
-            error.message
-        );
-
-    }
-
-};
+    console.log("Notification sent:", response);
+  } catch (error) {
+    console.log("Notification error:", error.message);
+  }
+};

@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
 import { emailQueue } from "../queues/emailQueue.js";
-import redis from "../config/redis.js";
+import { redisConnection } from "../config/redis.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
@@ -55,7 +55,7 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const lowerCaseEmail = email.toLowerCase();
     const tempUserKey = `temp_user:${lowerCaseEmail}`;
-    await redis.set(
+    await redisConnection.set(
       tempUserKey,
       JSON.stringify({
         name,
@@ -73,8 +73,8 @@ export const signup = async (req, res) => {
     console.log("store in redis");
 
     // Reset verification attempts
-    await redis.del(`otp_attempts:${lowerCaseEmail}`);
-    await redis.del(`otp_blocked:${lowerCaseEmail}`);
+    await redisConnection.del(`otp_attempts:${lowerCaseEmail}`);
+    await redisConnection.del(`otp_blocked:${lowerCaseEmail}`);
 
     try {
       const message = `Welcome to our platform! Your email verification OTP is ${otp}. It is valid for 10 minutes.`;
@@ -116,7 +116,7 @@ export const login = async (req, res) => {
     const blockedKey = `login_blocked:${lowerCaseEmail}`;
     const attemptsKey = `login_attempts:${lowerCaseEmail}`;
 
-    const isBlocked = await redis.get(blockedKey);
+    const isBlocked = await redisConnection.get(blockedKey);
     if (isBlocked) {
       return res.status(429).json({
         error:
@@ -141,15 +141,15 @@ export const login = async (req, res) => {
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      const attempts = await redis.incr(attemptsKey);
+      const attempts = await redisConnection.incr(attemptsKey);
 
       if (attempts === 1) {
-        await redis.expire(attemptsKey, 600);
+        await redisConnection.expire(attemptsKey, 600);
       }
 
       if (attempts >= 3) {
-        await redis.set(blockedKey, "true", "EX", 300);
-        await redis.del(attemptsKey);
+        await redisConnection.set(blockedKey, "true", "EX", 300);
+        await redisConnection.del(attemptsKey);
         return res.status(429).json({
           error:
             "You have exceeded 3 incorrect login attempts. Blocked for 5 minutes.",
@@ -161,8 +161,8 @@ export const login = async (req, res) => {
       });
     }
 
-    await redis.del(attemptsKey);
-    await redis.del(blockedKey);
+    await redisConnection.del(attemptsKey);
+    await redisConnection.del(blockedKey);
 
     const token = jwt.sign(
       { id: user._id },
@@ -219,14 +219,14 @@ export const verifyOTP = async (req, res) => {
     const tempUserKey = `temp_user:${lowerCaseEmail}`;
 
     // checked blocked user
-    const isBlocked = await redis.get(blockedKey);
+    const isBlocked = await redisConnection.get(blockedKey);
     if (isBlocked) {
       return res.status(429).json({
         error: "Too many failed attempts. Please try again after 5 minutes.",
       });
     }
 
-    const userData = await redis.get(tempUserKey);
+    const userData = await redisConnection.get(tempUserKey);
     if (!userData) {
       return res.status(400).json({
         error:
@@ -238,16 +238,16 @@ export const verifyOTP = async (req, res) => {
 
     // OTP verification validation
     if (tempData.otp !== otp.toString()) {
-      const attempts = await redis.incr(attemptsKey);
+      const attempts = await redisConnection.incr(attemptsKey);
 
       if (attempts === 1) {
-        await redis.expire(attemptsKey, 600);
+        await redisConnection.expire(attemptsKey, 600);
       }
 
       //rate limiting
       if (attempts >= 3) {
-        await redis.set(blockedKey, "true", "EX", 300);
-        await redis.del(attemptsKey);
+        await redisConnection.set(blockedKey, "true", "EX", 300);
+        await redisConnection.del(attemptsKey);
         return res.status(429).json({
           error:
             "You have exceeded 3 incorrect attempts. Blocked for 5 minutes.",
@@ -271,9 +271,9 @@ export const verifyOTP = async (req, res) => {
     });
 
     // Redis keys cleanup
-    await redis.del(tempUserKey);
-    await redis.del(attemptsKey);
-    await redis.del(blockedKey);
+    await redisConnection.del(tempUserKey);
+    await redisConnection.del(attemptsKey);
+    await redisConnection.del(blockedKey);
     console.log("OTP verify");
 
     // Welcome Email send alert queue
@@ -345,7 +345,7 @@ export const logout = async (req, res) => {
           const remainingSeconds = decoded.exp - Math.floor(Date.now() / 1000);
 
           if (remainingSeconds > 0) {
-            await redis.set(
+            await redisConnection.set(
               `blacklist:${token}`,
               "true",
               "EX",
@@ -382,11 +382,11 @@ export const logout = async (req, res) => {
 
 export const getTempUsers = async (req, res) => {
   try {
-    const keys = await redis.keys("temp_user:*");
+    const keys = await redisConnection.keys("temp_user:*");
     const list = [];
 
     for (const key of keys) {
-      const data = await redis.get(key);
+      const data = await redisConnection.get(key);
       if (data) {
         const parsed = JSON.parse(data);
         list.push({
@@ -733,6 +733,25 @@ export const sendCRMNotification = async (req, res) => {
       if (token) {
         await sendNotification(token, title, body);
       }
+    }
+
+    // Emit CRM notification to online users via Socket.io
+    try {
+      const users = await User.find({ fcmToken: { $in: fcmTokens } }, "_id");
+      if (users.length > 0) {
+        const { getIO } = await import("../config/socket.js");
+        const io = getIO();
+        for (const user of users) {
+          io.to(user._id.toString()).emit("crmNotification", {
+            title,
+            body,
+            message: body
+          });
+        }
+        console.log(`CRM notifications emitted via socket to ${users.length} users`);
+      }
+    } catch (socketErr) {
+      console.error("Failed to emit CRM notifications via socket:", socketErr);
     }
 
     res.status(200).json({

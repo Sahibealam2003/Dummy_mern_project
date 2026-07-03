@@ -1,12 +1,16 @@
 import Order from "../models/orderModel.js";
 import { emailQueue } from "../queues/emailQueue.js";
 import Cart from "../models/cartModel.js";
-import { getIO } from "../config/socket.js";
 import { sendNotification } from "../utils/sendNotification.js";
 import User from "../models/userModel.js";
+import {
+  emitOrderCreated,
+  emitOrderToNewAdmins,
+  emitOrderStatusUpdate,
+  emitOrderCancelledToAdmins,
+} from "../socket/emitters.js";
 
 //Create new order
-
 export const createOrder = async (req, res) => {
   try {
     const {
@@ -61,14 +65,12 @@ export const createOrder = async (req, res) => {
 
     // Socket emit
     try {
-      const io = getIO();
-      io.to(req.user._id.toString()).emit("newOrder", {
-        message: `Your order ${orderNumber} has been placed successfully!`,
-      });
-      console.log("New order event emitted to user", req.user._id);
+      emitOrderCreated(req.user._id, order);
+      emitOrderToNewAdmins(order);
     } catch (error) {
-      console.error("Failed to emit new order event:", error);
+      console.error("Socket emit error:", error);
     }
+
     console.log("req.user =", req.user);
     console.log("FCM Token =", req.user?.fcmToken);
     // Push notification
@@ -103,7 +105,6 @@ export const createOrder = async (req, res) => {
     } catch (emailError) {
       console.error("Failed to queue order email:", emailError);
     }
-    
 
     return res.status(201).json({
       success: true,
@@ -203,7 +204,9 @@ export const updateOrderStatus = async (req, res) => {
     await order.save();
 
     // Fetch fresh user with fcmToken directly from DB (not from populate)
-    const orderUser = await User.findById(order.user._id).select("name email fcmToken");
+    const orderUser = await User.findById(order.user._id).select(
+      "name email fcmToken",
+    );
     const userFcmToken = orderUser?.fcmToken;
 
     console.log("=== ORDER UPDATE DEBUG ===");
@@ -214,14 +217,9 @@ export const updateOrderStatus = async (req, res) => {
 
     // Emit live order status update via Socket.io
     try {
-      const io = getIO();
-      io.to(order.user._id.toString()).emit("orderStatusUpdate", {
-        orderId: order._id,
-        status: status,
-        message: `Your order status has been updated to: ${status}`,
-      });
+      emitOrderStatusUpdate(order.user._id, order);
       console.log(
-        "Order status update event emitted via socket to user:",
+        "Order status update event emitted via emitter for user:",
         order.user._id,
       );
     } catch (socketErr) {
@@ -274,9 +272,15 @@ export const updateOrderStatus = async (req, res) => {
       const emailType = emailTypeMap[status];
       if (emailType) {
         // For cancel, use slightly different data keys
-        const emailPayload = status === "Cancelled" 
-          ? { email: order.user.email, name: order.user.name, orderId: order.orderNumber, totalAmount: order.totalPrice }
-          : emailData;
+        const emailPayload =
+          status === "Cancelled"
+            ? {
+                email: order.user.email,
+                name: order.user.name,
+                orderId: order.orderNumber,
+                totalAmount: order.totalPrice,
+              }
+            : emailData;
 
         await emailQueue.add("sendEmail", {
           type: emailType,

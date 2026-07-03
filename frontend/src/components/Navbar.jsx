@@ -64,7 +64,6 @@ const Navbar = ({ onCartOpen }) => {
                 vapidKey: "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw",
                 serviceWorkerRegistration: swRegistration || undefined
             });
-            console.log("NEW TOKEN:", token);
             return token;
         };
 
@@ -209,7 +208,7 @@ const Navbar = ({ onCartOpen }) => {
                 <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center gap-4 md:gap-8 px-4 sm:px-6">
                     {/* Logo */}
                     <Link to="/" className="flex shrink-0 items-center gap-2 select-none group nav-logo-anim">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#e8622a] to-[#c44e1e] text-white shadow-md shadow-[#e8622a]/20 group-hover:scale-105 transition-transform duration-300">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-[#e8622a] to-[#c44e1e] text-white shadow-md shadow-[#e8622a]/20 group-hover:scale-105 transition-transform duration-300">
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                             </svg>
@@ -242,10 +241,10 @@ const Navbar = ({ onCartOpen }) => {
                                     {badge && (
                                         <span
                                             className={`rounded-full px-1.5 py-0.5 text-[8px] font-black tracking-wider text-white shadow-sm uppercase ${badge === "HOT"
-                                                    ? "bg-gradient-to-r from-red-500 to-orange-500"
+                                                    ? "bg-linear-to-r from-red-500 to-orange-500"
                                                     : badge === "ADMIN"
-                                                        ? "bg-gradient-to-r from-amber-500 to-orange-500"
-                                                        : "bg-gradient-to-r from-emerald-500 to-teal-500"
+                                                        ? "bg-linear-to-r from-amber-500 to-orange-500"
+                                                        : "bg-linear-to-r from-emerald-500 to-teal-500"
                                                 }`}
                                             style={{ lineHeight: 1 }}
                                         >
@@ -273,7 +272,7 @@ const Navbar = ({ onCartOpen }) => {
                                 Use Code <span className="font-extrabold text-[#e8622a]">SHOP10</span>
                             </p>
                             <span
-                                className="ml-1 rounded-full bg-gradient-to-r from-[#e8622a] to-[#c44e1e] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-[#e8622a]/25 animate-pulse"
+                                className="ml-1 rounded-full bg-linear-to-r from-[#e8622a] to-[#c44e1e] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-[#e8622a]/25 animate-pulse"
                             >
                                 10% OFF
                             </span>
@@ -319,7 +318,7 @@ const Navbar = ({ onCartOpen }) => {
                                 </svg>
                                 {totalItems > 0 && (
                                     <span
-                                        className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[9px] font-black text-white bg-gradient-to-r from-[#e8622a] to-[#c44e1e] shadow-[0_2px_8px_rgba(232,98,42,0.4)] border border-white z-10"
+                                        className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[9px] font-black text-white bg-linear-to-r from-[#e8622a] to-[#c44e1e] shadow-[0_2px_8px_rgba(232,98,42,0.4)] border border-white z-10"
                                     >
                                         {totalItems > 99 ? "99+" : totalItems}
                                     </span>
@@ -349,7 +348,7 @@ const Navbar = ({ onCartOpen }) => {
                                 </svg>
                                 {user?.wishlist?.length > 0 && (
                                     <span
-                                        className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[9px] font-black text-white bg-gradient-to-r from-rose-500 to-pink-600 shadow-[0_2px_8px_rgba(244,63,94,0.4)] border border-white z-10"
+                                        className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[9px] font-black text-white bg-linear-to-r from-rose-500 to-pink-600 shadow-[0_2px_8px_rgba(244,63,94,0.4)] border border-white z-10"
                                     >
                                         {user.wishlist.length}
                                     </span>
@@ -388,7 +387,7 @@ const Navbar = ({ onCartOpen }) => {
                                                 {user?.name ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2) : "U"}
                                             </div>
                                         )}
-                                        <span className="hidden sm:inline text-xs truncate max-w-[80px] font-bold text-[#2c2420]">
+                                        <span className="hidden sm:inline text-xs truncate max-w-20 font-bold text-[#2c2420]">
                                             {user?.name?.split(" ")[0]}
                                         </span>
                                         <svg className={`h-3.5 w-3.5 text-[#8c7e74] transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -428,7 +427,7 @@ const Navbar = ({ onCartOpen }) => {
                                                 <Link
                                                     to="/admin"
                                                     onClick={() => setDropdownOpen(false)}
-                                                    className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-extrabold text-amber-800 bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200/60 hover:from-amber-100/70 hover:to-amber-50 transition-all duration-200 cursor-pointer mb-1.5 shadow-sm"
+                                                    className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-extrabold text-amber-800 bg-linear-to-r from-amber-50 to-amber-100/50 border border-amber-200/60 hover:from-amber-100/70 hover:to-amber-50 transition-all duration-200 cursor-pointer mb-1.5 shadow-sm"
                                                 >
                                                     <svg className="h-4 w-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -524,7 +523,7 @@ const Navbar = ({ onCartOpen }) => {
                                             <Link
                                                 to="/login"
                                                 onClick={() => setDropdownOpen(false)}
-                                                className="block text-center rounded-lg bg-gradient-to-r from-[#e8622a] to-[#c44e1e] py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md shadow-[#e8622a]/15 hover:scale-[1.02] active:scale-[95] transition-all cursor-pointer"
+                                                className="block text-center rounded-lg bg-linear-to-r from-[#e8622a] to-[#c44e1e] py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md shadow-[#e8622a]/15 hover:scale-[1.02] active:scale-[95] transition-all cursor-pointer"
                                             >
                                                 Sign In
                                             </Link>

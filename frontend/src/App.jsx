@@ -56,8 +56,6 @@ useEffect(() => {
         "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw"
     });
 
-    console.log("NEW TOKEN");
-    console.log(token);
 
     await sendFToken(token);
   };
@@ -114,8 +112,7 @@ useEffect(() => {
     let socketInstance = null;
     const userId = user?.id || user?._id;
     if (isLoggedIn && userId) {
-      socketInstance = initiateSocket(userId);
-
+     socketInstance = initiateSocket(userId, isAdmin);
       if (socketInstance) {
         socketInstance.on("newOrder", (data) => {
           setSocketNotification({
@@ -167,8 +164,8 @@ useEffect(() => {
       style={{ background: "#f5f3ef" }}
     >
       {socketNotification && (
-        <div className="fixed top-48 right-6 z-[9999] max-w-sm w-full bg-white/95 backdrop-blur-md border border-indigo-100 rounded-xl shadow-2xl p-4 flex items-start space-x-3 transition-all duration-300">
-          <div className="flex-shrink-0 bg-indigo-50 text-indigo-600 p-2 rounded-lg">
+        <div className="fixed top-48 right-6 z-9999 max-w-sm w-full bg-white/95 backdrop-blur-md border border-indigo-100 rounded-xl shadow-2xl p-4 flex items-start space-x-3 transition-all duration-300">
+          <div className="shrink-0 bg-indigo-50 text-indigo-600 p-2 rounded-lg">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -187,11 +184,11 @@ useEffect(() => {
             <p className="text-sm font-semibold text-gray-900">
               {socketNotification.title}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed break-words">
+            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed wrap-break-word">
               {socketNotification.body}
             </p>
           </div>
-          <div className="flex-shrink-0 flex">
+          <div className="shrink-0 flex">
             <button
               onClick={() => setSocketNotification(null)}
               className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
@@ -286,26 +283,6 @@ useEffect(() => {
 
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
-
-  // const requestPermission = async () => {
-  //   try {
-  //     const permission = await Notification.requestPermission();
-
-  //     if (permission === "granted") {
-  //       const token = await getToken(messaging, {
-  //         vapidKey:
-  //           "BPs5qx2DhTCj4bPnpK3U97GrDxwS_NULttwN7wn1QzM0SS4lLx9jiJFMKMCyswDuqH_JgNzJPRDcaMmAluCnuuw",
-  //       });
-  //       console.log("FCM TOKEN:", token);
-  //       await sendFToken(token);
-  //       console.log("FCM Token saved to backend successfully");
-  //     } else {
-  //       console.log("Notification permission denied");
-  //     }
-  //   } catch (error) {
-  //     console.log("Firebase Error:", error);
-  //   }
-  // };
 
   return (
     <>

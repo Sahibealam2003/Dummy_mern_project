@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import gsap from "gsap";
 import { getSocket } from "../services/socket";
+
 import {
   getAllProducts,
   createProductApi,
@@ -234,29 +235,54 @@ const AdminPanel = () => {
   useEffect(() => {
     if (!isLoggedIn || user?.role !== "admin") return;
 
-    const socket = getSocket();
+    // NOTE: AdminPanel listens from the App-level socket.
+    // If App hasn't initialized the socket yet, polling ensures we attach listeners.
+    let intervalId = null;
 
-    console.log("Socket =", socket);
-    console.log("Socket connected =", socket?.connected);
-    if (!socket) return;
+    const attach = () => {
+      const socket = getSocket();
+      console.log("Socket =", socket);
+      console.log("Socket connected =", socket?.connected);
+      if (!socket) return false;
 
-    const handleNewOrder = (order) => {
-      console.log("Before:", orders.length);
+      const handleNewOrder = (order) => {
+        console.log("Admin new order event:", order);
+        setOrders((prev) => [order, ...prev]);
+      };
 
-      setOrders((prev) => {
-        console.log("Prev =", prev.length);
-        return [order, ...prev];
-      });
+      socket.on("new-order", handleNewOrder);
+      socket.on("admin:new-order", handleNewOrder);
 
-      console.log("After event");
+
+      return () => {
+        socket.off("new-order", handleNewOrder);
+        socket.off("admin:new-order", handleNewOrder);
+      };
     };
 
-    socket.on("new-order", handleNewOrder);
+    let detachFn = null;
+
+    const tryAttach = () => {
+      if (detachFn) return;
+      detachFn = attach();
+      if (detachFn) {
+        console.log("Admin socket listeners attached");
+        if (intervalId) clearInterval(intervalId);
+      }
+    };
+
+    tryAttach();
+
+    intervalId = setInterval(() => {
+      tryAttach();
+    }, 500);
 
     return () => {
-      socket.off("new-order", handleNewOrder);
+      if (intervalId) clearInterval(intervalId);
+      if (detachFn) detachFn();
     };
   }, [isLoggedIn, user]);
+
 
   // Prevent background scrolling when modals are open
   useEffect(() => {

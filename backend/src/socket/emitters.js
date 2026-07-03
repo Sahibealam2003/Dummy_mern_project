@@ -13,10 +13,23 @@ export const emitOrderCreated=(userId,order)=>{
 //Admin notify
 export const emitOrderToNewAdmins = (order)=>{
 
-    const io = getIO()
+    const safeGetIO = () => {
+        try {
+            return getIO();
+        } catch (e) {
+            console.error("Socket.io not initialized, cannot emit order to admins:", e.message);
+            return null;
+        }
+    }
+
+    const io = safeGetIO();
+    if (!io) return;
+
     io.to("admins").emit("new-order",order)
+    io.to("admins").emit("admin:new-order", order)
     console.log("new sent to admins dashboard")
 }
+
 
 //Custommer order UPdate notify
 export const emitOrderStatusUpdate = (userId,order)=>{

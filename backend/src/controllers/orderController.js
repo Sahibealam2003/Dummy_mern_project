@@ -65,8 +65,10 @@ export const createOrder = async (req, res) => {
 
     // Socket emit
     try {
+
       emitOrderCreated(req.user._id, order);
       emitOrderToNewAdmins(order);
+      console.log(order)
     } catch (error) {
       console.error("Socket emit error:", error);
     }
